@@ -1,15 +1,15 @@
 //Constants.h
 #include <string>
 
-std::string knot_filename = "test_three1"; //assumed input filename format of "XXXXX.stl"
+std::string knot_filename = "example_trefoil"; //assumed input filename format of "XXXXX.stl"
 
 //OPTION - do you want the geometry of the input file to be exactly preserved, or can it be scaled to fit the box better
 //1 to scale input file preserving the aspect ratio, 0 otherwise
-#define PRESERVE_RATIOS 0  
+#define PRESERVE_RATIOS 1  
 
 // OPTION - what grid values do you want
 //Grid points
-const double h = 0.8;            //grid spacing
+const double h = 1;            //grid spacing
 const int initialNx = 100;   //No. points in x,y and z
 const int initialNy = 100;
 const int initialNz = 100;
