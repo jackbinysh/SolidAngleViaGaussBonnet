@@ -1,4 +1,4 @@
-#include "FN_Knot.h"    //contains user defined variables for the simulation, and the parameters used 
+#include "SolidAngleGaussBonnet.h"    //contains user defined variables for the simulation, and the parameters used 
 #include <omp.h>
 #include <math.h>
 #include <string.h>
@@ -124,7 +124,7 @@ void DualConePhiCalc(vector<double>&phi, const griddata& griddata)
                         ProjectedCurve.knotcurve.push_back(Point);
                     }
 
-                    // get segment lengths
+                    // get segment lengths, tangent vectors, for the projected curve
                     float topdeltas = 0;
                     for(int s=0;s<ProjectedCurve.knotcurve.size();s++)
                     {
@@ -133,6 +133,9 @@ void DualConePhiCalc(vector<double>&phi, const griddata& griddata)
                         double dy = (ProjectedCurve.knotcurve[incp(s,1,NP)].ycoord - ProjectedCurve.knotcurve[incp(s,0,NP)].ycoord);
                         double dz = (ProjectedCurve.knotcurve[incp(s,1,NP)].zcoord - ProjectedCurve.knotcurve[incp(s,0,NP)].zcoord);
                         double deltas = sqrt(dx*dx+dy*dy+dz*dz);
+                        ProjectedCurve.knotcurve[s].tx= dx/(deltas);
+                        ProjectedCurve.knotcurve[s].ty= dy/(deltas);
+                        ProjectedCurve.knotcurve[s].tz= dz/(deltas);
                         ProjectedCurve.knotcurve[s].length = deltas;
                         if (deltas > topdeltas){ topdeltas = deltas;}
                     }
@@ -179,19 +182,10 @@ void DualConePhiCalc(vector<double>&phi, const griddata& griddata)
                     // now from the projected curve, construct the dual. In the notation below, I follow Mark Levi's convention of using n to denote position on the sphere
                     for(int s=0;s<ProjectedCurve.knotcurve.size();s++)
                     {
-                        int NP = ProjectedCurve.knotcurve.size();
-                        // forward difference on the tangents
-                        double dx = (ProjectedCurve.knotcurve[incp(s,1,NP)].xcoord - ProjectedCurve.knotcurve[incp(s,0,NP)].xcoord);   //central diff as a is defined on the points
-                        double dy = (ProjectedCurve.knotcurve[incp(s,1,NP)].ycoord - ProjectedCurve.knotcurve[incp(s,0,NP)].ycoord);
-                        double dz = (ProjectedCurve.knotcurve[incp(s,1,NP)].zcoord - ProjectedCurve.knotcurve[incp(s,0,NP)].zcoord);
-                        double deltas = sqrt(dx*dx+dy*dy+dz*dz);
-                        double tx = dx/(deltas);
-                        double ty = dy/(deltas);
-                        double tz = dz/(deltas);
 
-                        ProjectedCurve.knotcurve[s].tx = tx;
-                        ProjectedCurve.knotcurve[s].ty = ty;
-                        ProjectedCurve.knotcurve[s].tz = tz;
+                        double tx = ProjectedCurve.knotcurve[s].tx ;
+                        double ty = ProjectedCurve.knotcurve[s].ty ;
+                        double tz = ProjectedCurve.knotcurve[s].tz ;
 
                         double nx = ProjectedCurve.knotcurve[s].xcoord;
                         double ny = ProjectedCurve.knotcurve[s].ycoord;

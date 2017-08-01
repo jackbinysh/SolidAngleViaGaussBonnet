@@ -1,7 +1,7 @@
 //Constants.h
 #include <string>
 
-std::string knot_filename = "pringle"; //assumed input filename format of "XXXXX.stl"
+std::string knot_filename = "test_three1"; //assumed input filename format of "XXXXX.stl"
 
 //OPTION - do you want the geometry of the input file to be exactly preserved, or can it be scaled to fit the box better
 //1 to scale input file preserving the aspect ratio, 0 otherwise

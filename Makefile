@@ -3,8 +3,8 @@ CXX=g++
 CXXFLAGS= -O3 -fopenmp
 LDLIBS= -lm -fopenmp
 LDFLAGS= -O3 
-OBJS= FN_Knot.o
-DEPS=FN_Knot.h FN_Constants.h 
+OBJS= SolidAngleGaussBonnet.o
+DEPS=SolidAngleGaussBonnet.h Constants.h 
 
 all: executable clean
 release: executable clean
@@ -13,7 +13,7 @@ debug: LDFLAGS = -Wall -g
 debug: executable clean
 
 executable:$(OBJS)
-	$(CXX) -o FN_Knot $(OBJS) $(LDLIBS) $(LDFLAGS)
+	$(CXX) -o SolidAngleGaussBonnet $(OBJS) $(LDLIBS) $(LDFLAGS)
 
 %.o: %.c $(DEPS)
 	$(CXX) $(CXXFLAGS)-c -o $@ $< 

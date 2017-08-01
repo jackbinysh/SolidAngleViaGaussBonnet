@@ -1,10 +1,4 @@
-//  FN_knot_code.h
-//
-//
-//  Created by Carl Whitfield on 17/05/2016.
-//
-//  Last modified 3/11/16
-#include "FN_Constants.h"
+#include "Constants.h"
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
