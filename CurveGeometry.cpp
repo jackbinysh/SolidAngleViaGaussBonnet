@@ -4,11 +4,10 @@
 
 int main (void)
 {
-  std::string knot_filename = "trefoil120"; //assumed input filename format of "XXXXX.stl"
-
+  std::string knot_filename = "seven6"; //assumed input filename format of "XXXXX.txt"
   knotcurve Curve;
-  InitialiseFromFile(Curve,knot_filename);
   //  InitialiseCurve(Curve);
+  InitialiseFromFile(Curve,knot_filename);
   // compute the writhe of the curve
   double writhe = Writhe(Curve);
 
@@ -47,7 +46,7 @@ void InitialiseCurve(knotcurve& Curve)
   int p = 2;
   int q = 3;
   double r = 0.505;
-  int NP = 3200;
+  int NP = 6000;
   for (int s=0; s<NP; s++)
     {
       knotpoint Point;
@@ -60,7 +59,7 @@ void InitialiseCurve(knotcurve& Curve)
   // twisted unknot -- ( cos u , sin u , r sin pu )
   int p = 2;
   double r = 0.3;
-  int NP = 1200;
+  int NP = 6000;
   for (int s=0; s<NP; s++)
     {
       knotpoint Point;
@@ -154,7 +153,7 @@ void InitialiseFromFile(knotcurve& Curve, std::string& knot_filename)
   ComputeTangent(Curve);
   ComputeKappaB(Curve);
   // refine the curve to increase number of points
-  while(Curve.knotcurve.size() < 3000)
+  while(Curve.knotcurve.size() < 5000)
     {
       RefineCurve(Curve);
       ComputeLengths(Curve);
@@ -336,18 +335,9 @@ double Twist(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Angle += ds*ndotT*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist*dist - ndotT*ndotT);
-      // new version -- this approach is significantly worse!!
-      /*      double dkappaNx = Curve.knotcurve[s].tx - Curve.knotcurve[incp(s,-1,NP)].tx;
-      double dkappaNy = Curve.knotcurve[s].ty - Curve.knotcurve[incp(s,-1,NP)].ty;
-      double dkappaNz = Curve.knotcurve[s].ty - Curve.knotcurve[incp(s,-1,NP)].tz;
-      double dkappaBx = ty*dkappaNz - tz*dkappaNy;
-      double dkappaBy = tz*dkappaNx - tx*dkappaNz;
-      double dkappaBz = tx*dkappaNy - ty*dkappaNx;
-      // and here's the integrand
-      Angle += ndotT*(viewx*dkappaBx + viewy*dkappaBy + viewz*dkappaBz)/(1.0 - ndotT*ndotT);*/
     }
 
   Angle /= 2.0*M_PI;  
@@ -375,7 +365,7 @@ double SolidAngleCalc(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
     }
@@ -404,7 +394,7 @@ double SolidAngleCalc2(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Iminus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
     }

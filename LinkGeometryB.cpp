@@ -210,7 +210,7 @@ double Twist(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Angle += ds*ndotT*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist*dist - ndotT*ndotT);
     }
@@ -240,7 +240,7 @@ double SolidAngleCalc(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
     }
@@ -269,7 +269,7 @@ double SolidAngleCalc2(const knotcurve& Curve, const viewpoint& View)
       double kappaBx = Curve.knotcurve[s].kappaBx;
       double kappaBy = Curve.knotcurve[s].kappaBy;
       double kappaBz = Curve.knotcurve[s].kappaBz;
-      double ds = Curve.knotcurve[s].length;
+      double ds = 0.5*(Curve.knotcurve[s].length+Curve.knotcurve[incp(s,-1,NP)].length);
       // and here's the integrand
       Iminus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
     }
