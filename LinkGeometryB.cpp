@@ -4,7 +4,7 @@
 
 int main (void)
 {
-  int L = 2; // number of link components
+  int L = 3; // number of link components
   vector<knotcurve> Link (L);
   InitialiseLink(Link);
 
@@ -17,9 +17,9 @@ int main (void)
 
   // it would be good to construct a set of points to compute the twist from
   viewpoint View;
-  View.xcoord = 5.0;
-  View.ycoord = -5.0;
-  View.zcoord = 5.0;
+  View.xcoord = 3.3;
+  View.ycoord = 3.3;
+  View.zcoord = 3.3;
 
   // compute the twist of each component with the projective framing
   double twist[L];
@@ -38,7 +38,7 @@ int main (void)
   while(omega1>4*M_PI) omega1 -= 4*M_PI;
   while(omega1<0) omega1 += 4*M_PI;
 
-  // there are really NL^2 choices not just 2
+  // there are really L^2 choices not just 2
   double omega2 = 0.0;
   for (int i=0; i<L; i++)
     {
@@ -52,43 +52,44 @@ int main (void)
     {
       cout << "curve " << i << ":  Wr = " << writhe[i] << "  Tw = " << twist[i] << "  SL = " << writhe[i]+twist[i] << endl; 
     }
-  cout << "omega1 = " << omega1 << "  omega2 = " << omega2 << endl;
+  cout << "solid angle:  omega1 = " << omega1 << "  omega2 = " << omega2 << endl;
 
   // output the solid angle on a grid
-  cout << "calculating the solid angle..." << endl;
-  OutputSolidAngle(Link,writhe);
+  //  cout << "calculating the solid angle..." << endl;
+  //  OutputSolidAngle(Link,writhe);
 
   return 0;
 }
 
-// initialise the link 
+// initialise the link -- Borromean rings
 void InitialiseLink(vector<knotcurve>& Link)
 {
   int L = Link.size(); // number of link components
+  // ellipses in three orthogonal planes
   double x0 = 0.024; // small shift of origin;
   double y0 = 0.036;
   double z0 = -0.022;
-  // torus knot -- ( (1 + r cos qu) cos pu , (1 + r cos qu) sin pu , r sin qu )
-  int p = 1;
-  int q = 2;
-  double r = 0.57;
+  double r = 2.0; // semi-major axis
   int NP = 2000;
   for (int s=0; s<NP; s++)
     {
       knotpoint Point;
-      Point.xcoord = x0 + (1.24+r*cos(2.0*M_PI*q*s/NP))*cos(2.0*M_PI*p*s/NP);
-      Point.ycoord = y0 + (1.24+r*cos(2.0*M_PI*q*s/NP))*sin(2.0*M_PI*p*s/NP);
-      Point.zcoord = z0 + r*sin(2.0*M_PI*q*s/NP);
+      // first link component
+      Point.xcoord = x0 + r*cos(2.0*M_PI*s/NP);
+      Point.ycoord = y0 + sin(2.0*M_PI*s/NP);
+      Point.zcoord = z0;
       Link[0].knotcurve.push_back(Point);
       // second link component
-      //      Point.xcoord = x0 + (1.24-r*cos(2.0*M_PI*q*s/NP))*cos(2.0*M_PI*p*s/NP);
-      //      Point.ycoord = y0 + (1.24-r*cos(2.0*M_PI*q*s/NP))*sin(2.0*M_PI*p*s/NP);
-      //      Point.zcoord = z0 - r*sin(2.0*M_PI*q*s/NP);
-      // second link component -- reverse orientation
-      Point.xcoord = x0 + (1.24-r*cos(2.0*M_PI*q*s/NP))*cos(2.0*M_PI*p*s/NP);
-      Point.ycoord = y0 - (1.24-r*cos(2.0*M_PI*q*s/NP))*sin(2.0*M_PI*p*s/NP);
-      Point.zcoord = z0 + r*sin(2.0*M_PI*q*s/NP);
+      Point.xcoord = x0;
+      Point.ycoord = y0 + r*cos(2.0*M_PI*s/NP);
+      Point.zcoord = z0 + sin(2.0*M_PI*s/NP);
+      //      Point.zcoord = z0 - sin(2.0*M_PI*s/NP); // reverse orientation
       Link[1].knotcurve.push_back(Point);
+      // third link component
+      Point.xcoord = x0 + sin(2.0*M_PI*s/NP);
+      Point.ycoord = y0;
+      Point.zcoord = z0 + r*cos(2.0*M_PI*s/NP);
+      Link[2].knotcurve.push_back(Point);
     }
 
   // calculate geometry

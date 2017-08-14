@@ -38,7 +38,7 @@ struct viewpoint
 
 /*************************Functions for knot initialisation*****************************/
 
-void InitialiseCurve(struct knotcurve& Curve1, struct knotcurve& Curve2);
+void InitialiseLink(vector<struct knotcurve>& Link);
 
 /**********************Functions for curve geometry************************/
 
@@ -50,9 +50,9 @@ double Twist(const struct knotcurve& Curve, const struct viewpoint& View);
 
 /***********************Functions for outputting the solid angle*************************/
 
-double SolidAngleCalc(const struct knotcurve& Curve1, const struct knotcurve& Curve2, const double writhe1, const double writhe2, const struct viewpoint& View);
-double SolidAngleCalc2(const struct knotcurve& Curve1, const struct knotcurve& Curve2, const double writhe1, const double writhe2, const struct viewpoint& View);
-void OutputSolidAngle(const struct knotcurve& Curve1, const struct knotcurve& Curve2, const double writhe1, const double writhe2);
+double SolidAngleCalc(const struct knotcurve& Curve, const struct viewpoint& View);
+double SolidAngleCalc2(const struct knotcurve& Curve, const struct viewpoint& View);
+void OutputSolidAngle(const vector<struct knotcurve>& Link, const double *writhe);
 
 /*************************General maths and integer functions*****************************/
 

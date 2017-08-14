@@ -18,6 +18,9 @@ struct knotpoint
   double ty;       //tangent vector y component
   double tz;       //tangent vector z component
   double length;   //length of line
+  double kappaNx;  //curvature vector x component
+  double kappaNy;  //curvature vector x component
+  double kappaNz;  //curvature vector x component
   double kappaBx;  //integrand we need, x component
   double kappaBy;  //integrand we need, y component
   double kappaBz;  //integrand we need, z component
@@ -38,7 +41,10 @@ struct viewpoint
 
 /*************************Functions for knot initialisation*****************************/
 
+void InitialiseFromFile(struct knotcurve& Curve, std::string& knot_filename);
+void ScaleFunction(double *scale, double maxxin, double minxin, double maxyin, double minyin, double maxzin, double minzin);
 void InitialiseCurve(struct knotcurve& Curve);
+void RefineCurve(struct knotcurve& Curve);
 
 /**********************Functions for curve geometry************************/
 
@@ -50,8 +56,8 @@ double Twist(const struct knotcurve& Curve, const struct viewpoint& View);
 
 /***********************Functions for outputting the solid angle*************************/
 
-double SolidAngleCalc(const struct knotcurve& Curve, const double writhe, const struct viewpoint& View);
-double SolidAngleCalc2(const struct knotcurve& Curve, const double writhe, const struct viewpoint& View);
+double SolidAngleCalc(const struct knotcurve& Curve, const struct viewpoint& View);
+double SolidAngleCalc2(const struct knotcurve& Curve, const struct viewpoint& View);
 void OutputSolidAngle(const struct knotcurve& Curve, const double writhe);
 
 /*************************General maths and integer functions*****************************/
