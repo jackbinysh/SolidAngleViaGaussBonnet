@@ -29,8 +29,7 @@ int main (void)
     while(omega2>4*M_PI) omega2 -= 4*M_PI;
     while(omega2<0) omega2 += 4*M_PI;
 
-     //cout << "Wr = " << writhe << "  Tw = " << twist << "  SL = " << writhe+twist << "  omega = " << omega << "  omega2 = " << omega2 << endl;
-     cout <<  omega = " << omega << "  omega2 = " << omega2 << endl;
+    cout << "  omega = " << omega << "  omega2 = " << omega2 << endl;
 
     // output the solid angle on a grid
     cout << "calculating the solid angle..." << endl;
@@ -169,15 +168,15 @@ void InitialiseFromFile(Link& Curve)
     ComputeKappaB(Curve);
 
     // refine the curve to increase number of points
-  //  while(Curve.NumPoints < 5000*Curve.NumComponents)
-  //  {
-  //      RefineCurve(Curve);
-  //      ComputeLengths(Curve);
-  //      ComputeTangent(Curve);
-  //      ComputeKappaB(Curve);
+    //  while(Curve.NumPoints < 5000*Curve.NumComponents)
+    //  {
+    //      RefineCurve(Curve);
+    //      ComputeLengths(Curve);
+    //      ComputeTangent(Curve);
+    //      ComputeKappaB(Curve);
 
-        cout << "curve has size " << Curve.NumPoints << endl;
-  //  }
+    cout << "curve has size " << Curve.NumPoints << endl;
+    //  }
 }
 
 void ScaleFunction(double *scale, double maxxin, double minxin, double maxyin, double minyin, double maxzin, double minzin)
@@ -473,14 +472,16 @@ void OutputSolidAngle(const Link& Curve)
             for (int i=0; i<Nx; i++) 
             {
                 Point.xcoord = x(i,griddata);
-                double threshold = -0.985;	      
-                // double ndotTmin = CheckThreshold(Curve,Point);
-                //	      double ndotTmax = 0.0;
-                //  if (ndotTmin > threshold)
+
+                double ndotTmin,ndotTmax;
+                CheckThreshold(Curve,Point,ndotTmin,ndotTmax);
+
+                // is ndotT very close to 1? if so, better us 1/(1+ndotT)
+                if(fabs(1 - ndotTmax) < fabs(-1-ndotTmin)) 
                 {
                     SolidAngle = SolidAngleCalc(Curve,Point);
                 }
-                //  else 
+                else 
                 {
                     SolidAngle = SolidAngleCalc2(Curve,Point);
                 }
@@ -497,31 +498,33 @@ void OutputSolidAngle(const Link& Curve)
 }
 
 // function to improve behaviour near tangent developable surface
-double CheckThreshold(const knotcurve& Curve, const viewpoint& Point)
+void CheckThreshold(const Link& Curve, const viewpoint& Point, double& ndotTmin,double& ndotTmax)
 {
-    int NP = Curve.knotcurve.size();
-    double ndotTmin = 0.0;
-    //	      double ndotTmax = 0.0;
-
-    for (int s=0; s<NP; s++) 
+    // set these guys at impossible bounds
+    ndotTmin = 2.0;
+    ndotTmax = -2.0;
+    for(int i=0; i<Curve.NumComponents; i++)
     {
-        double curvex = Curve.knotcurve[s].xcoord;
-        double curvey = Curve.knotcurve[s].ycoord;
-        double curvez = Curve.knotcurve[s].zcoord;
-        // define the view vector -- n = (Curve - View)/|Curve - View|
-        double viewx = curvex - Point.xcoord;
-        double viewy = curvey - Point.ycoord;
-        double viewz = curvez - Point.zcoord;
-        double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);		  
-        double tx = Curve.knotcurve[s].tx;
-        double ty = Curve.knotcurve[s].ty;
-        double tz = Curve.knotcurve[s].tz;
-        double ndotT = (viewx*tx + viewy*ty + viewz*tz)/dist;
-        if (ndotT<ndotTmin) ndotTmin = ndotT;
-        //		  if (ndotT>ndotTmax) ndotTmax = ndotT;
-    }
+        int NP = Curve.Components[i].knotcurve.size();
 
-    return ndotTmin;	      
+        for (int s=0; s<NP; s++) 
+        {
+            double curvex = Curve.Components[i].knotcurve[s].xcoord;
+            double curvey = Curve.Components[i].knotcurve[s].ycoord;
+            double curvez = Curve.Components[i].knotcurve[s].zcoord;
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = curvex - Point.xcoord;
+            double viewy = curvey - Point.ycoord;
+            double viewz = curvez - Point.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);		  
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = (viewx*tx + viewy*ty + viewz*tz)/dist;
+            if (ndotT<ndotTmin) ndotTmin = ndotT;
+            if (ndotT>ndotTmax) ndotTmax = ndotT;
+        }
+    }
 }
 
 inline int incp(int i, int p, int N)    //increment i with p for periodic boundary

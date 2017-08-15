@@ -81,7 +81,7 @@ void OutputSolidAngle(const struct Link& Curve);
 
 /*************************General maths and integer functions*****************************/
 
-//double CheckThreshold(const struct Link& Curve, const struct viewpoint& Point);
+void CheckThreshold(const struct Link& Curve, const struct viewpoint& Point,double& ndotTmin,double& ndotTmax);
 // little inline guys
 inline int incp(int i, int p, int N);    //increment i with p for periodic boundary
 inline double x(int i,const griddata& griddata);
