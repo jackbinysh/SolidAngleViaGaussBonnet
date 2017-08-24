@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 
+
 int main (void)
 {
     Link Curve;
@@ -427,7 +428,6 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                 ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
                 // check if a threshold is exceeded
                 double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                cout << threshold << '\n';
                 if (threshold > 1)
                 {
                     // note the minus sign introduced here -- makes the quantity positive
@@ -440,7 +440,7 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                     double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
                     Integrand[sp] = -2 * ( ( k*theta )/(theta*theta)  )*ds;
                     double Iplus = (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
-                    cout << "value" << Iplus << '\n';
+                    //   cout << "value" << Iplus << '\n';
                     // set an excluded window about sp
                     window[sp] = 0;
                     for (int m=1; m<=M/2; m++) 
@@ -451,7 +451,7 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                         Integrand[incp(sp,-m,NP)] = -2 * ( ( k*theta )/(theta*theta +( (double)(m)*avgds*k )*( (double)(m)*avgds*k) )*ds  );
                     }
                     count++;
-                    cout << "cusp found at s = " << s << endl;
+                    //  cout << "cusp found at s = " << s << endl;
                 }
             }
         }
@@ -475,13 +475,13 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                 double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
                 double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
                 // Simpson's rule quadrature
-               // double ds0 = Curve.Components[i].knotcurve[s].length;
-               // double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-               // double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-               // double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-               // double ds;
-               // if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-               // else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+                // double ds0 = Curve.Components[i].knotcurve[s].length;
+                // double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+                // double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+                // double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+                // double ds;
+                // if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+                // else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
                 double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
                 // and here's the integrand
                 double tempIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
@@ -531,15 +531,15 @@ double SolidAngleCalc(const Link& Curve, const viewpoint& View)
             double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
             double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
             // Simpson's rule quadrature
-          //  double ds0 = Curve.Components[i].knotcurve[s].length;
-          //  double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-          //  double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-          //  double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-          //  double ds;
-          //  if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-          //  else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+            //  double ds0 = Curve.Components[i].knotcurve[s].length;
+            //  double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+            //  double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+            //  double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+            //  double ds;
+            //  if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+            //  else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
             // and here's the integrand
-                double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+            double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
             Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
         }
         componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
@@ -591,16 +591,20 @@ double SolidAngleCalc2(const Link& Curve, const viewpoint& View)
 
 
 // the regularised one
-double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
+double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correctionapplied)
 {
+
+    correctionapplied = 0;
+    bool correctionflag = 0;
     double totalomega =0;
     for(int i=0; i<Curve.NumComponents; i++)
     {
         double Iplus = 0.0;
+        double uncorrectedpartIntegral = 0.0;
         int NP = Curve.Components[i].knotcurve.size();
 
         // check proximity to tangent developable surface
-        int M = 4; // even integer for defining a window around the cusp point
+        int M = 8; // even integer for defining a window around the cusp point
         int window[NP]; // window of integration
         for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
         int count = 0; // keep track of the number of cusp points we encounter
@@ -611,7 +615,7 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
             double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
             double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
             double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-            double ndotT = viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz;
+            double ndotT =  (viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
             // calculate dot product with the Frenet normal
             double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
             ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
@@ -627,7 +631,7 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
             {
                 // tag the point of the curve
                 int sp = s;
-                if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
+                //if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
                 // compute ndotT and ndotB
                 viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
                 viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
@@ -635,23 +639,62 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
                 dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
                 // note the minus sign introduced here -- makes the quantity positive
                 ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
+                double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
+                double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
+                double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
+                double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
+
+                double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
+                double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
                 // check if a threshold is exceeded
                 double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
                 if (threshold > 1)
                 {
-                    // note the minus sign introduced here -- makes the quantity positive
-                    double ndotB = (-viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
+
+                    // the lambda which, when put into a linear interpolatio of s n, would give the location of the zero in ndotN.
+                    double lambda = -(ndotN/(ndotN2 - ndotN));
+                    double s0 =sp +lambda;
+
+
+                    // an interpolation of the quanities needed in the integral:
+                    double k0 = Curve.Components[i].knotcurve[sp].curvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].curvature);
+                    double ndotB0 = ndotB + lambda*(ndotB2-ndotB);
+
                     // value of the integral over the narrow Lorentzian peak
-                    Iplus += (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
+
+                    double avgds = Curve.Components[i].length/NP;
+                    //Iplus += (-2.0*sqrt(2.0)*(ndotB0/ndotT0)/sqrt(1.0/ndotT0 - 1.0))*atan(k0*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT0 - 1.0)));
+                    double x0 = (sp - ((M/2) -1)-s0)*avgds;
+                    double x1 = (sp + ((M/2) +1)-s0)*avgds;
+                    double theta = asin(ndotB0);
+                    Iplus += 2*(atan(k0*x0/theta) -atan(k0*x1/theta));
                     // set an excluded window about sp
-                    window[sp] = 0;
                     for (int m=1; m<=M/2; m++) 
                     {
                         window[incp(sp,m,NP)] = 0;
-                        window[incp(sp,-m,NP)] = 0;
+                        window[incp(sp,-(m-1),NP)] = 0;
                     }
                     count++;
-                   // cout << "cusp found at s = " << s << endl;
+                    cout << "cusp found at s = " << s << endl;
+                    cout << "theta is " << theta << endl;
+                    cout << "Correction is " << Iplus << endl;
+
+                    // I want to check if the integral matches at the boundaries:
+                    viewx = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].xcoord - View.xcoord;
+                    viewy = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].ycoord - View.ycoord;
+                    viewz = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].zcoord - View.zcoord;
+                    dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+                    // now do the Riemann integral -- I think I can rewrite this better
+                    double tx = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].tx;
+                    double ty = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].ty;
+                    double tz = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].tz;
+                    ndotT = viewx*tx + viewy*ty + viewz*tz;
+                    double kappaBx = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].kappaBx;
+                    double kappaBy = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].kappaBy;
+                    double kappaBz = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].kappaBz;
+                    double Integrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                    correctionapplied = (-2*k0*theta/(theta*theta+ k0*k0*x1*x1))-Integrand;
+                    correctionflag =1;
                 }
             }
         }
@@ -677,7 +720,7 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
                 double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
 
                 double factor =1;
-                if(window[incp(s,1,NP)]==0 || window[incp(s,-1,NP)]==0){factor = 0.5;}
+                // if(window[incp(s,1,NP)]==0 || window[incp(s,-1,NP)]==0){factor = 0.5;}
                 // Simpson's rule quadrature
                 //   double ds0 = Curve.Components[i].knotcurve[s].length;
                 //   double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
@@ -689,14 +732,17 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
                 // trapezium rule quadrature
                 //      ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
                 // and here's the integrand
-                Iplus += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                uncorrectedpartIntegral += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
                 // cheap trick
                 if ((window[incp(s,1,NP)]==0)||(window[incp(s,-1,NP)]==0))
                 {
-                //    Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                    //    Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
                 }
             }
         }
+        if(Iplus * uncorrectedpartIntegral <0){correctionapplied = -1;};
+        if(correctionflag){ cout << "uncorrected part is " << uncorrectedpartIntegral << endl;};
+        Iplus += uncorrectedpartIntegral;
         double componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
         totalomega += componentomega;
     }
@@ -732,6 +778,10 @@ void OutputSolidAngle(const Link& Curve)
     Bout << "SPACING " << h << ' ' << h << ' ' << h << '\n';
     Bout << "POINT_DATA " << Nx*Ny*Nz << '\n';
     Bout << "SCALARS Phi float\nLOOKUP_TABLE default\n";
+
+
+    double additionaldata[Nx*Ny*Nz];
+
     for (int k=0; k<Nz; k++) 
     {
         Point.zcoord = z(k,griddata);
@@ -745,16 +795,16 @@ void OutputSolidAngle(const Link& Curve)
                 double ndotTmin,ndotTmax;
                 CheckThreshold(Curve,Point,ndotTmin,ndotTmax);
 
-                if( i == Nx/2 && j == Ny-3)
+                if( i == Nx/2 && j == 87)
                 {
                     OutputIntegrands(Curve, Point,i,j,k);
                 }
 
                 // is ndotT very close to 1? if so, better us 1/(1+ndotT)
                 // if(fabs(1 - ndotTmax) < fabs(-1-ndotTmin)) 
-                {
-                    SolidAngle = SolidAngleCalc(Curve,Point);
-                }
+                // {
+                SolidAngle = SolidAngleCalc(Curve,Point);
+                // }
                 // else 
                 {
                     //      SolidAngle = SolidAngleCalc2(Curve,Point);
@@ -766,16 +816,33 @@ void OutputSolidAngle(const Link& Curve)
 
                 Aout << SolidAngle << '\n';	      
 
-                SolidAngle = SolidAngleCalcR(Curve,Point);
+                double correctionapplied = 0;
+                SolidAngle = SolidAngleCalcR(Curve,Point,correctionapplied);
 
                 // put in the interval [0,4pi]
                 while(SolidAngle>4*M_PI) SolidAngle -= 4*M_PI;
                 while(SolidAngle<0) SolidAngle += 4*M_PI;
 
                 Bout << SolidAngle << '\n';	      
+                additionaldata[Nz*Ny*i+Nz*j+k] = correctionapplied ;	      
             }
         }
     }
+    Bout << "SCALARS correction float\nLOOKUP_TABLE default\n";
+    Aout << "SCALARS correction float\nLOOKUP_TABLE default\n";
+
+    for (int k=0; k<Nz; k++) 
+    {
+        for (int j=0; j<Ny; j++) 
+        {  
+            for (int i=0; i<Nx; i++) 
+            {
+                Aout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
+                Bout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
+            }
+        }
+    }
+
     Aout.close();
     Bout.close();
 }
@@ -791,7 +858,7 @@ void OutputTangentDevelopable(const Link& Curve)
     griddata.Ny = Ny;
     griddata.Nz = Nz;
 
-    double spacing = 5;
+    double spacing = 1;
 
     // the forward branch
     for(int i=0; i<Curve.NumComponents; i++)
