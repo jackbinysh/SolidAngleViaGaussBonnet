@@ -288,62 +288,211 @@ void ComputeKappaB(Link& Curve)
     }
 }
 
-    // computes the writhe of each link component 
-    void Writhe(Link& Curve)
+// computes the writhe of each link component 
+void Writhe(Link& Curve)
+{
+    for(int i=0; i<Curve.NumComponents; i++)
     {
-        for(int i=0; i<Curve.NumComponents; i++)
+        double Wr = 0.0;
+        int NP = Curve.Components[i].knotcurve.size();
+
+        for (int s=0; s<NP; s++) // running over the knot
         {
-            double Wr = 0.0;
-            int NP = Curve.Components[i].knotcurve.size();
+            double a1x = Curve.Components[i].knotcurve[s].xcoord;
+            double a1y = Curve.Components[i].knotcurve[s].ycoord;
+            double a1z = Curve.Components[i].knotcurve[s].zcoord;
+            double t1x = Curve.Components[i].knotcurve[s].tx;
+            double t1y = Curve.Components[i].knotcurve[s].ty;
+            double t1z = Curve.Components[i].knotcurve[s].tz;
+            double ds = Curve.Components[i].knotcurve[s].length;
 
-            for (int s=0; s<NP; s++) // running over the knot
+            for (int t=s+1; t<NP; t++) // run over all points ahead of s
             {
-                double a1x = Curve.Components[i].knotcurve[s].xcoord;
-                double a1y = Curve.Components[i].knotcurve[s].ycoord;
-                double a1z = Curve.Components[i].knotcurve[s].zcoord;
-                double t1x = Curve.Components[i].knotcurve[s].tx;
-                double t1y = Curve.Components[i].knotcurve[s].ty;
-                double t1z = Curve.Components[i].knotcurve[s].tz;
-                double ds = Curve.Components[i].knotcurve[s].length;
+                double a2x = Curve.Components[i].knotcurve[t].xcoord;
+                double a2y = Curve.Components[i].knotcurve[t].ycoord;
+                double a2z = Curve.Components[i].knotcurve[t].zcoord;
+                double t2x = Curve.Components[i].knotcurve[t].tx;
+                double t2y = Curve.Components[i].knotcurve[t].ty;
+                double t2z = Curve.Components[i].knotcurve[t].tz;
+                double dt = Curve.Components[i].knotcurve[t].length;
 
-                for (int t=s+1; t<NP; t++) // run over all points ahead of s
-                {
-                    double a2x = Curve.Components[i].knotcurve[t].xcoord;
-                    double a2y = Curve.Components[i].knotcurve[t].ycoord;
-                    double a2z = Curve.Components[i].knotcurve[t].zcoord;
-                    double t2x = Curve.Components[i].knotcurve[t].tx;
-                    double t2y = Curve.Components[i].knotcurve[t].ty;
-                    double t2z = Curve.Components[i].knotcurve[t].tz;
-                    double dt = Curve.Components[i].knotcurve[t].length;
-
-                    double dist = sqrt((a1x-a2x)*(a1x-a2x)+(a1y-a2y)*(a1y-a2y)+(a1z-a2z)*(a1z-a2z));
-                    Wr += ds*dt*((a1x-a2x)*(t1y*t2z-t1z*t2y)+(a1y-a2y)*(t1z*t2x-t1x*t2z)+(a1z-a2z)*(t1x*t2y-t1y*t2x))/(dist*dist*dist);
-                }
+                double dist = sqrt((a1x-a2x)*(a1x-a2x)+(a1y-a2y)*(a1y-a2y)+(a1z-a2z)*(a1z-a2z));
+                Wr += ds*dt*((a1x-a2x)*(t1y*t2z-t1z*t2y)+(a1y-a2y)*(t1z*t2x-t1x*t2z)+(a1z-a2z)*(t1x*t2y-t1y*t2x))/(dist*dist*dist);
             }
-            Wr /= 2.0*M_PI; 
-            Curve.Components[i].writhe=Wr;
         }
+        Wr /= 2.0*M_PI; 
+        Curve.Components[i].writhe=Wr;
+    }
+}
+
+// computes the twist of a curve with an induced framing
+void Twist(Link& Curve, const viewpoint& View)
+{
+    for(int i=0; i<Curve.NumComponents; i++)
+    {
+        double Angle = 0.0; 
+        int NP = Curve.Components[i].knotcurve.size();
+
+        for (int s=0; s<NP; s++) // running over the knot
+        {
+            double curvex = Curve.Components[i].knotcurve[s].xcoord;
+            double curvey = Curve.Components[i].knotcurve[s].ycoord;
+            double curvez = Curve.Components[i].knotcurve[s].zcoord;
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = curvex - View.xcoord;
+            double viewy = curvey - View.ycoord;
+            double viewz = curvez - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
+
+            // now do the Riemann integral -- I think I can rewrite this better
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = viewx*tx + viewy*ty + viewz*tz;
+            double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+            double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+            double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+            // Simpson's rule quadrature
+            double ds0 = Curve.Components[i].knotcurve[s].length;
+            double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+            double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+            double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+            double ds;
+            if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+            else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+            // and here's the integrand
+            Angle += ds*ndotT*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist*dist - ndotT*ndotT);
+        }
+
+        Angle /= 2.0*M_PI;  
+        Curve.Components[i].twist=Angle;
+    }
+}
+
+// a function which will output the entire integrand at a given point
+void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int  Pointj, int  Pointk)
+{
+
+    for(int i=0; i<Curve.NumComponents; i++)
+    {
+        std::ostringstream oss;
+        oss << "PlusIntegrand_Component" << i << "_"  << Pointk << ".txt";
+        string name = oss.str();
+        ofstream Aout (name.c_str());
+        std::ostringstream oss2;
+        oss2 << "MinusIntegrand_Component" << i << "_"  << Pointk << ".txt";
+        name = oss2.str();
+        ofstream A2out (name.c_str());
+        // run over the knot 
+        int NP = Curve.Components[i].knotcurve.size();
+        for (int s=0; s<NP; s++) 
+        {
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+            // now do the Riemann integral -- I think I can rewrite this better
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = viewx*tx + viewy*ty + viewz*tz;
+            double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+            double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+            double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+            // and here's the integrand
+            double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+            double PlusIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+            double MinusIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
+            Aout << PlusIntegrand*ds << '\n';
+            A2out << MinusIntegrand*ds << '\n';
+        }
+        Aout.close();
+        A2out.close();
     }
 
-    // computes the twist of a curve with an induced framing
-    void Twist(Link& Curve, const viewpoint& View)
+    for(int i=0; i<Curve.NumComponents; i++)
     {
-        for(int i=0; i<Curve.NumComponents; i++)
+        int NP = Curve.Components[i].knotcurve.size();
+
+        // check proximity to tangent developable surface
+        int M = 32; // even integer for defining a window around the cusp point
+        int window[NP]; // window of integration
+        double Integrand[NP]; // window of integration
+        for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
+        int count = 0; // keep track of the number of cusp points we encounter
+        for (int s=0; s<NP; s++)
         {
-            double Angle = 0.0; 
-            int NP = Curve.Components[i].knotcurve.size();
 
-            for (int s=0; s<NP; s++) // running over the knot
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+            double ndotT = viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz;
+            // calculate dot product with the Frenet normal
+            double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
+            ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
+            // repeat for the next point along
+            double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
+            double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
+            double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
+            double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
+            double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
+            ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
+            // only continue if ndotN changes sign and ndotT is negative
+            if ((ndotN*ndotN2<0) && (ndotT<0))
             {
-                double curvex = Curve.Components[i].knotcurve[s].xcoord;
-                double curvey = Curve.Components[i].knotcurve[s].ycoord;
-                double curvez = Curve.Components[i].knotcurve[s].zcoord;
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = curvex - View.xcoord;
-                double viewy = curvey - View.ycoord;
-                double viewz = curvez - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
+                // tag the point of the curve
+                int sp = s;
+                if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
+                // compute ndotT and ndotB
+                viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
+                viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
+                viewz = Curve.Components[i].knotcurve[sp].zcoord - View.zcoord;
+                dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
+                // note the minus sign introduced here -- makes the quantity positive
+                ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
+                // check if a threshold is exceeded
+                double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
+                if (threshold > 1)
+                {
+                    // note the minus sign introduced here -- makes the quantity positive
+                    double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
+                    // value of the integral over the narrow Lorentzian peak
+                    //Integrand[sp] = (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
+                    double theta = ( ndotB>0? 1 :-1 )*acos(ndotT);
+                    double k =Curve.Components[i].knotcurve[sp].curvature ;
+                    double avgds = Curve.Components[i].length/(double)NP;
+                    double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+                    Integrand[sp] = -2 * ( ( k*theta )/(theta*theta)  )*ds;
+                    double Iplus = (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
+                    //   cout << "value" << Iplus << '\n';
+                    // set an excluded window about sp
+                    window[sp] = 0;
+                    for (int m=1; m<=M/2; m++) 
+                    {
+                        window[incp(sp,m,NP)] = 0;
+                        window[incp(sp,-m,NP)] = 0;
+                        Integrand[incp(sp,m,NP)] = -2 * ( ( k*theta )/(theta*theta +((double)(m)*avgds*k)*((double)(m)*avgds*k) )  )*ds;
+                        Integrand[incp(sp,-m,NP)] = -2 * ( ( k*theta )/(theta*theta +( (double)(m)*avgds*k )*( (double)(m)*avgds*k) )*ds  );
+                    }
+                    count++;
+                    //  cout << "cusp found at s = " << s << endl;
+                }
+            }
+        }
 
+        // now do the remaining integral as usual
+        for (int s=0; s<NP; s++) 
+        {
+            if (window[s]==1)
+            {
+                // define the view vector -- n = (Curve - View)/|Curve - View|
+                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
                 // now do the Riemann integral -- I think I can rewrite this better
                 double tx = Curve.Components[i].knotcurve[s].tx;
                 double ty = Curve.Components[i].knotcurve[s].ty;
@@ -353,637 +502,533 @@ void ComputeKappaB(Link& Curve)
                 double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
                 double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
                 // Simpson's rule quadrature
-                double ds0 = Curve.Components[i].knotcurve[s].length;
-                double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-                double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-                double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-                double ds;
-                if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-                else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+                // double ds0 = Curve.Components[i].knotcurve[s].length;
+                // double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+                // double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+                // double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+                // double ds;
+                // if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+                // else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+                double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
                 // and here's the integrand
-                Angle += ds*ndotT*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist*dist - ndotT*ndotT);
+                double tempIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                // Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                // cheap trick
+                if ((window[incp(s,1,NP)]==0)||(window[incp(s,-1,NP)]==0))
+                {
+                    //  tempIntegrand += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                    // Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                }
+                Integrand[s]=tempIntegrand*ds;
             }
-
-            Angle /= 2.0*M_PI;  
-            Curve.Components[i].twist=Angle;
         }
+
+        std::ostringstream oss;
+        oss << "RegularisedPlusIntegrand_Component" << i << "_"  << Pointk << ".txt";
+        string name = oss.str();
+        ofstream A3out (name.c_str());
+
+        for (int s=0; s<NP; s++){A3out << Integrand[s] << '\n';};
+        A3out.close();
     }
+}
 
-    // a function which will output the entire integrand at a given point
-    void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int  Pointj, int  Pointk)
+double SolidAngleCalc(const Link& Curve, const viewpoint& View)
+{
+    double totalomega =0.0;
+    for(int i=0; i<Curve.NumComponents; i++)
     {
+        double componentomega =0.0;
+        // run over the knot 
+        double Iplus = 0.0;
+        int NP = Curve.Components[i].knotcurve.size();
+        for (int s=0; s<NP; s++) 
+        {
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+            // now do the Riemann integral -- I think I can rewrite this better
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = viewx*tx + viewy*ty + viewz*tz;
+            double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+            double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+            double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+            // Simpson's rule quadrature
+            //  double ds0 = Curve.Components[i].knotcurve[s].length;
+            //  double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+            //  double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+            //  double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+            //  double ds;
+            //  if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+            //  else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+            // and here's the integrand
+            double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+            Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+        }
+        componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
+        totalomega += componentomega;
+    }
+    return totalomega;
+}
 
-        for(int i=0; i<Curve.NumComponents; i++)
+double SolidAngleCalc2(const Link& Curve, const viewpoint& View)
+{
+    double totalomega =0.0;
+    for(int i=0; i<Curve.NumComponents; i++)
+    {
+        double componentomega =0.0;
+        // run over the knot 
+        double Iminus = 0.0;
+        int NP = Curve.Components[i].knotcurve.size();
+        for (int s=0; s<NP; s++) 
+        {
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+            // now do the Riemann integral -- I think I can rewrite this better
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = viewx*tx + viewy*ty + viewz*tz;
+            double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+            double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+            double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+            // Simpson's rule quadrature
+            double ds0 = Curve.Components[i].knotcurve[s].length;
+            double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+            double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+            double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+            double ds;
+            if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+            else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+            // and here's the integrand
+            Iminus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
+        }
+        componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iminus;
+        totalomega += componentomega;
+    }
+    return totalomega;
+}
+
+
+// the regularised one
+double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correctionapplied)
+{
+
+    correctionapplied = 0;
+    bool correctionflag = 0;
+    double totalomega =0;
+    for(int i=0; i<Curve.NumComponents; i++)
+    {
+        double Iplus = 0.0;
+        double uncorrectedpartIntegral = 0.0;
+        int NP = Curve.Components[i].knotcurve.size();
+
+        // check proximity to tangent developable surface
+        int M = 16; // even integer for defining a window around the cusp point
+        int window[NP]; // window of integration
+        double correctedintegrand[NP]; // window of integration
+        double uncorrectedintegrand[NP]; // window of integration
+
+        for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
+
+        int count = 0; // keep track of the number of cusp points we encounter
+        for (int s=0; s<NP; s++)
+        {
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+            double ndotT =  (viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
+            // calculate dot product with the Frenet normal
+            double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
+            ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
+            // repeat for the next point along
+            double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
+            double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
+            double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
+            double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
+            double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
+            ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
+            // only continue if ndotN changes sign and ndotT is negative
+            if ((ndotN*ndotN2<0) && (ndotT<0))
+            {
+                // tag the point of the curve
+                int sp = s;
+                //if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
+                // compute ndotT and ndotB
+                viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
+                viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
+                viewz = Curve.Components[i].knotcurve[sp].zcoord - View.zcoord;
+                dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
+                // note the minus sign introduced here -- makes the quantity positive
+                ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
+                double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
+                double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
+                double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
+                double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
+
+                double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
+                double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
+                // check if a threshold is exceeded
+                double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
+                if (threshold > 1)
+                {
+
+                    correctionflag =1;
+
+                    // the lambda which, when put into a linear interpolatio of s n, would give the location of the zero in ndotN.
+                    double lambda = -(ndotN/(ndotN2 - ndotN));
+                    double s0 =sp +lambda;
+
+
+                    // an interpolation of the quanities needed in the integral:
+                    double k0 = Curve.Components[i].knotcurve[sp].curvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].curvature);
+                    double tau0 = Curve.Components[i].knotcurve[sp].torsion + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].torsion);
+                    double dk0 = Curve.Components[i].knotcurve[sp].dcurvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].dcurvature-Curve.Components[i].knotcurve[sp].dcurvature);
+                    double ndotB0 = ndotB + lambda*(ndotB2-ndotB);
+
+                    // value of the integral over the narrow Lorentzian peak
+
+                    double avgds = Curve.Components[i].length/NP;
+                    //Iplus += (-2.0*sqrt(2.0)*(ndotB0/ndotT0)/sqrt(1.0/ndotT0 - 1.0))*atan(k0*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT0 - 1.0)));
+                    double x0 = (sp - ((M/2) -1)-s0)*avgds;
+                    double x1 = (sp + ((M/2) +1)-s0)*avgds;
+                    double theta = asin(ndotB0);
+                    double Iplus0 = 2*(atan(k0*x0/theta) -atan(k0*x1/theta));
+                    double Iplus1 = (x1-x0)*tau0+(2+(theta*tau0)/k0) * (atan(k0*x0/theta) -atan(k0*x1/theta));
+                    Iplus +=Iplus1;
+                    // set an excluded window about sp
+                 //   for (int m=1; m<=M/2; m++) 
+                 //   {
+                 //       double y0 = (sp - m -1-s0)*avgds;
+                 //       double y1 = (sp + m +1-s0)*avgds;
+                 //       window[incp(sp,m,NP)] = 0;
+                 //       window[incp(sp,-(m-1),NP)] = 0;
+                 //       correctedintegrand[incp(sp,m,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y1*y1) ) ;
+                 //       correctedintegrand[incp(sp,-(m-1),NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y0*y0) ) ;
+                 //   }
+                 // do the ones above
+                    for (int q=0; q<=M/2; q++) 
+                    {
+                        double y1 = (sp + q -s0)*avgds;
+                        window[incp(sp,q,NP)] = 0;
+                        correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y1*y1) ) ;
+                    }
+                 // do the ones below 
+                    for (int q=-1; q>=(-M/2)+1; q--) 
+                    {
+                        double y0 = (sp + q -s0)*avgds;
+                        window[incp(sp,q,NP)] = 0;
+                        correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y0*y0) ) ;
+                    }
+                    count++;
+                    cout << "cusp found at s = " << s << '\n';
+                    cout << "theta is " << theta << '\n';
+
+                    // I want to check if the integral matches at the boundaries:
+                    viewx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].xcoord - View.xcoord;
+                    viewy = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].ycoord - View.ycoord;
+                    viewz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].zcoord - View.zcoord;
+                    dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+                    // now do the Riemann integral -- I think I can rewrite this better
+                    double tx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].tx;
+                    double ty = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].ty;
+                    double tz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].tz;
+                    ndotT = viewx*tx + viewy*ty + viewz*tz;
+                    double kappaBx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBx;
+                    double kappaBy = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBy;
+                    double kappaBz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBz;
+                    double Integrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                    (-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand;
+                    correctionapplied = ((-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand)/Integrand;
+                    cout << "taylor0 is " << ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                    cout << "taylor1 is " << ( -2*k0*theta + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                    cout << "taylor2 is " << ( -2*k0*theta - 2*dk0*x1*theta  + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                    cout << "numeric is " << Integrand  << '\n';
+                    cout << "relative error is " << correctionapplied/Integrand  << '\n';
+                    cout << "Iplus0 is " << Iplus0  << '\n';
+                    cout << "Iplus1 is " << Iplus1  << '\n';
+                }
+            }
+        }
+
+        // now do the remaining integral as usual
+        for (int s=0; s<NP; s++) 
+        {
+            {
+                // define the view vector -- n = (Curve - View)/|Curve - View|
+                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+                // now do the Riemann integral -- I think I can rewrite this better
+                double tx = Curve.Components[i].knotcurve[s].tx;
+                double ty = Curve.Components[i].knotcurve[s].ty;
+                double tz = Curve.Components[i].knotcurve[s].tz;
+                double ndotT = viewx*tx + viewy*ty + viewz*tz;
+                double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+                double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+                double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+                double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+
+                double factor =1;
+
+                // if(window[incp(s,1,NP)]==0 || window[incp(s,-1,NP)]==0){factor = 0.5;}
+                // Simpson's rule quadrature
+                //   double ds0 = Curve.Components[i].knotcurve[s].length;
+                //   double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
+                //   double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
+                //   double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
+                //   double ds;
+                //   if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
+                //   else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
+                // trapezium rule quadrature
+                //      ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+                // and here's the integrand
+
+
+                uncorrectedintegrand[s] =  (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+
+                if (window[s]==1)
+                {
+                    correctedintegrand[s] =  (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                    uncorrectedpartIntegral += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                }
+                // cheap trick
+                if ((window[incp(s,1,NP)]==0)||(window[incp(s,-1,NP)]==0))
+                {
+                    //    Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                }
+            }
+        }
+
+        // now spit the data for the point out
+        if(correctionflag)
         {
             std::ostringstream oss;
-            oss << "PlusIntegrand_Component" << i << "_"  << Pointk << ".txt";
+            oss << "RegularisedPlusIntegrand" << View.xcoord << "_"  << View.ycoord <<"_" << View.zcoord << ".txt";
             string name = oss.str();
             ofstream Aout (name.c_str());
+            for (int s=0; s<NP; s++){Aout << correctedintegrand[s] << '\n';};
+            Aout.close();
             std::ostringstream oss2;
-            oss2 << "MinusIntegrand_Component" << i << "_"  << Pointk << ".txt";
+            oss2 << "PlusIntegrand" << View.xcoord << "_"  << View.ycoord <<"_" << View.zcoord << ".txt";
             name = oss2.str();
             ofstream A2out (name.c_str());
-            // run over the knot 
-            int NP = Curve.Components[i].knotcurve.size();
-            for (int s=0; s<NP; s++) 
-            {
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                // now do the Riemann integral -- I think I can rewrite this better
-                double tx = Curve.Components[i].knotcurve[s].tx;
-                double ty = Curve.Components[i].knotcurve[s].ty;
-                double tz = Curve.Components[i].knotcurve[s].tz;
-                double ndotT = viewx*tx + viewy*ty + viewz*tz;
-                double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-                double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-                double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-                // and here's the integrand
-                double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-                double PlusIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                double MinusIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
-                Aout << PlusIntegrand*ds << '\n';
-                A2out << MinusIntegrand*ds << '\n';
-            }
-            Aout.close();
+            for (int s=0; s<NP; s++){A2out << uncorrectedintegrand[s] << '\n';};
             A2out.close();
-        }
+        };
 
-        for(int i=0; i<Curve.NumComponents; i++)
-        {
-            int NP = Curve.Components[i].knotcurve.size();
 
-            // check proximity to tangent developable surface
-            int M = 32; // even integer for defining a window around the cusp point
-            int window[NP]; // window of integration
-            double Integrand[NP]; // window of integration
-            for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
-            int count = 0; // keep track of the number of cusp points we encounter
-            for (int s=0; s<NP; s++)
+        Iplus += uncorrectedpartIntegral;
+        double componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
+        totalomega += componentomega;
+    }
+    return totalomega;
+}
+void OutputSolidAngle(const Link& Curve)
+{
+
+    double SolidAngle;
+    viewpoint Point;
+
+    // header stuff for the vtk file
+    string fn = "solid_angle.vtk";
+    ofstream Aout (fn.c_str());
+
+    griddata griddata;
+    griddata.Nx = Nx;
+    griddata.Ny = Ny;
+    griddata.Nz = Nz;
+    Aout << "# vtk DataFile Version 3.0\nKnot\nASCII\nDATASET STRUCTURED_POINTS\n";
+    Aout << "DIMENSIONS " << Nx << ' ' << Ny << ' ' << Nz << '\n';
+    Aout << "ORIGIN " << x(0,griddata) << ' ' << y(0,griddata) << ' ' << z(0,griddata) << '\n';
+    Aout << "SPACING " << h << ' ' << h << ' ' << h << '\n';
+    Aout << "POINT_DATA " << Nx*Ny*Nz << '\n';
+    Aout << "SCALARS Phi float\nLOOKUP_TABLE default\n";
+
+    // header stuff for the vtk file
+    fn = "solid_angle_regular.vtk";
+    ofstream Bout (fn.c_str());
+
+    Bout << "# vtk DataFile Version 3.0\nKnot\nASCII\nDATASET STRUCTURED_POINTS\n";
+    Bout << "DIMENSIONS " << Nx << ' ' << Ny << ' ' << Nz << '\n';
+    Bout << "ORIGIN " << x(0,griddata) << ' ' << y(0,griddata) << ' ' << z(0,griddata) << '\n';
+    Bout << "SPACING " << h << ' ' << h << ' ' << h << '\n';
+    Bout << "POINT_DATA " << Nx*Ny*Nz << '\n';
+    Bout << "SCALARS Phi float\nLOOKUP_TABLE default\n";
+
+    vector<double> additionaldata(Nx*Ny*Nz);
+
+    for (int k=0; k<Nz; k++) 
+    {
+        Point.zcoord = z(k,griddata);
+        for (int j=0; j<Ny; j++) 
+        {  
+            Point.ycoord = y(j,griddata) ;
+            for (int i=0; i<Nx; i++) 
             {
+                Point.xcoord = x(i,griddata);
 
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                double ndotT = viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz;
-                // calculate dot product with the Frenet normal
-                double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
-                ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
-                // repeat for the next point along
-                double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
-                double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
-                double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
-                double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-                double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
-                ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
-                // only continue if ndotN changes sign and ndotT is negative
-                if ((ndotN*ndotN2<0) && (ndotT<0))
+                double ndotTmin,ndotTmax;
+                CheckThreshold(Curve,Point,ndotTmin,ndotTmax);
+
+
+                // is ndotT very close to 1? if so, better us 1/(1+ndotT)
+                // if(fabs(1 - ndotTmax) < fabs(-1-ndotTmin)) 
+                // {
+                SolidAngle = SolidAngleCalc(Curve,Point);
+                // }
+                // else 
                 {
-                    // tag the point of the curve
-                    int sp = s;
-                    if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
-                    // compute ndotT and ndotB
-                    viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
-                    viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
-                    viewz = Curve.Components[i].knotcurve[sp].zcoord - View.zcoord;
-                    dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
-                    // note the minus sign introduced here -- makes the quantity positive
-                    ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
-                    // check if a threshold is exceeded
-                    double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                    if (threshold > 1)
-                    {
-                        // note the minus sign introduced here -- makes the quantity positive
-                        double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
-                        // value of the integral over the narrow Lorentzian peak
-                        //Integrand[sp] = (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
-                        double theta = ( ndotB>0? 1 :-1 )*acos(ndotT);
-                        double k =Curve.Components[i].knotcurve[sp].curvature ;
-                        double avgds = Curve.Components[i].length/(double)NP;
-                        double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-                        Integrand[sp] = -2 * ( ( k*theta )/(theta*theta)  )*ds;
-                        double Iplus = (-2.0*sqrt(2.0)*(ndotB/ndotT)/sqrt(1.0/ndotT - 1.0))*atan(threshold);
-                        //   cout << "value" << Iplus << '\n';
-                        // set an excluded window about sp
-                        window[sp] = 0;
-                        for (int m=1; m<=M/2; m++) 
-                        {
-                            window[incp(sp,m,NP)] = 0;
-                            window[incp(sp,-m,NP)] = 0;
-                            Integrand[incp(sp,m,NP)] = -2 * ( ( k*theta )/(theta*theta +((double)(m)*avgds*k)*((double)(m)*avgds*k) )  )*ds;
-                            Integrand[incp(sp,-m,NP)] = -2 * ( ( k*theta )/(theta*theta +( (double)(m)*avgds*k )*( (double)(m)*avgds*k) )*ds  );
-                        }
-                        count++;
-                        //  cout << "cusp found at s = " << s << endl;
-                    }
+                    //      SolidAngle = SolidAngleCalc2(Curve,Point);
                 }
-            }
 
-            // now do the remaining integral as usual
-            for (int s=0; s<NP; s++) 
+                // put in the interval [0,4pi]
+                while(SolidAngle>4*M_PI) SolidAngle -= 4*M_PI;
+                while(SolidAngle<0) SolidAngle += 4*M_PI;
+
+                Aout << SolidAngle << '\n';	      
+
+                double correctionapplied = 0;
+                SolidAngle = SolidAngleCalcR(Curve,Point,correctionapplied);
+
+                // put in the interval [0,4pi]
+                while(SolidAngle>4*M_PI) SolidAngle -= 4*M_PI;
+                while(SolidAngle<0) SolidAngle += 4*M_PI;
+
+                Bout << SolidAngle << '\n';	      
+                additionaldata[Nz*Ny*i+Nz*j+k] = correctionapplied ;	      
+            }
+        }
+    }
+    Bout << "SCALARS correction float\nLOOKUP_TABLE default\n";
+    Aout << "SCALARS correction float\nLOOKUP_TABLE default\n";
+
+    for (int k=0; k<Nz; k++) 
+    {
+        for (int j=0; j<Ny; j++) 
+        {  
+            for (int i=0; i<Nx; i++) 
             {
-                if (window[s]==1)
-                {
-                    // define the view vector -- n = (Curve - View)/|Curve - View|
-                    double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                    double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                    double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                    double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                    // now do the Riemann integral -- I think I can rewrite this better
-                    double tx = Curve.Components[i].knotcurve[s].tx;
-                    double ty = Curve.Components[i].knotcurve[s].ty;
-                    double tz = Curve.Components[i].knotcurve[s].tz;
-                    double ndotT = viewx*tx + viewy*ty + viewz*tz;
-                    double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-                    double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-                    double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-                    // Simpson's rule quadrature
-                    // double ds0 = Curve.Components[i].knotcurve[s].length;
-                    // double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-                    // double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-                    // double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-                    // double ds;
-                    // if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-                    // else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
-                    double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-                    // and here's the integrand
-                    double tempIntegrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    // Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    // cheap trick
-                    if ((window[incp(s,1,NP)]==0)||(window[incp(s,-1,NP)]==0))
-                    {
-                        //  tempIntegrand += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                        // Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    }
-                    Integrand[s]=tempIntegrand*ds;
-                }
+                Aout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
+                Bout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
             }
-
-            std::ostringstream oss;
-            oss << "RegularisedPlusIntegrand_Component" << i << "_"  << Pointk << ".txt";
-            string name = oss.str();
-            ofstream A3out (name.c_str());
-
-            for (int s=0; s<NP; s++){A3out << Integrand[s] << '\n';};
-            A3out.close();
         }
     }
 
-    double SolidAngleCalc(const Link& Curve, const viewpoint& View)
+    Aout.close();
+    Bout.close();
+}
+void OutputTangentDevelopable(const Link& Curve)
+{
+    // header stuff for the vtk file
+    string fn = "Tangent_Developable.txt";
+    ofstream Aout (fn.c_str());
+
+    griddata griddata;
+    griddata.Nx = Nx;
+    griddata.Ny = Ny;
+    griddata.Nz = Nz;
+
+    double spacing = 1;
+
+    // the forward branch
+    for(int i=0; i<Curve.NumComponents; i++)
     {
-        double totalomega =0.0;
-        for(int i=0; i<Curve.NumComponents; i++)
+        int NP = Curve.Components[i].knotcurve.size();
+        for (int s=0; s<NP; s++) 
         {
-            double componentomega =0.0;
-            // run over the knot 
-            double Iplus = 0.0;
-            int NP = Curve.Components[i].knotcurve.size();
-            for (int s=0; s<NP; s++) 
+
+            double xcoord = 0;
+            double ycoord = 0;
+            double zcoord = 0;
+            double lambda = 0;
+            while( xcoord < x(Nx,griddata) && xcoord > x(0,griddata) && ycoord < y(Ny,griddata) && ycoord > y(0,griddata) && zcoord < z(Nz,griddata) && zcoord > z(0,griddata) )
             {
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                // now do the Riemann integral -- I think I can rewrite this better
-                double tx = Curve.Components[i].knotcurve[s].tx;
-                double ty = Curve.Components[i].knotcurve[s].ty;
-                double tz = Curve.Components[i].knotcurve[s].tz;
-                double ndotT = viewx*tx + viewy*ty + viewz*tz;
-                double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-                double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-                double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-                // Simpson's rule quadrature
-                //  double ds0 = Curve.Components[i].knotcurve[s].length;
-                //  double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-                //  double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-                //  double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-                //  double ds;
-                //  if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-                //  else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
-                // and here's the integrand
-                double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-                Iplus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
+                xcoord = Curve.Components[i].knotcurve[s].xcoord + lambda*Curve.Components[i].knotcurve[s].tx;
+                ycoord = Curve.Components[i].knotcurve[s].ycoord + lambda*Curve.Components[i].knotcurve[s].ty;
+                zcoord = Curve.Components[i].knotcurve[s].zcoord + lambda*Curve.Components[i].knotcurve[s].tz;
+                Aout << xcoord <<' '<<ycoord<<' '<<zcoord<< ' '<< 0 << '\n'; 	      
+                lambda += spacing;
             }
-            componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
-            totalomega += componentomega;
         }
-        return totalomega;
     }
-
-    double SolidAngleCalc2(const Link& Curve, const viewpoint& View)
+    // the backward branch
+    for(int i=0; i<Curve.NumComponents; i++)
     {
-        double totalomega =0.0;
-        for(int i=0; i<Curve.NumComponents; i++)
+        int NP = Curve.Components[i].knotcurve.size();
+        for (int s=0; s<NP; s++) 
         {
-            double componentomega =0.0;
-            // run over the knot 
-            double Iminus = 0.0;
-            int NP = Curve.Components[i].knotcurve.size();
-            for (int s=0; s<NP; s++) 
+
+            double xcoord = 0;
+            double ycoord = 0;
+            double zcoord = 0;
+            double lambda = -spacing;
+            while( xcoord < x(Nx,griddata) && xcoord > x(0,griddata) && ycoord < y(Ny,griddata) && ycoord > y(0,griddata) && zcoord < z(Nz,griddata) && zcoord > z(0,griddata) )
             {
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                // now do the Riemann integral -- I think I can rewrite this better
-                double tx = Curve.Components[i].knotcurve[s].tx;
-                double ty = Curve.Components[i].knotcurve[s].ty;
-                double tz = Curve.Components[i].knotcurve[s].tz;
-                double ndotT = viewx*tx + viewy*ty + viewz*tz;
-                double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-                double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-                double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-                // Simpson's rule quadrature
-                double ds0 = Curve.Components[i].knotcurve[s].length;
-                double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-                double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-                double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-                double ds;
-                if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-                else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
-                // and here's the integrand
-                Iminus += ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist - ndotT);
+                xcoord = Curve.Components[i].knotcurve[s].xcoord + lambda*Curve.Components[i].knotcurve[s].tx;
+                ycoord = Curve.Components[i].knotcurve[s].ycoord + lambda*Curve.Components[i].knotcurve[s].ty;
+                zcoord = Curve.Components[i].knotcurve[s].zcoord + lambda*Curve.Components[i].knotcurve[s].tz;
+                Aout << xcoord <<' '<<ycoord<<' '<<zcoord<<' '<< 1 <<'\n'; 	      
+                lambda -= spacing;
             }
-            componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iminus;
-            totalomega += componentomega;
         }
-        return totalomega;
     }
-
-
-    // the regularised one
-    double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correctionapplied)
+    Aout.close();
+}
+// function to improve behaviour near tangent developable surface
+void CheckThreshold(const Link& Curve, const viewpoint& Point, double& ndotTmin,double& ndotTmax)
+{
+    // set these guys at impossible bounds
+    ndotTmin = 2.0;
+    ndotTmax = -2.0;
+    for(int i=0; i<Curve.NumComponents; i++)
     {
+        int NP = Curve.Components[i].knotcurve.size();
 
-        correctionapplied = 0;
-        bool correctionflag = 0;
-        double totalomega =0;
-        for(int i=0; i<Curve.NumComponents; i++)
+        for (int s=0; s<NP; s++) 
         {
-            double Iplus = 0.0;
-            double uncorrectedpartIntegral = 0.0;
-            int NP = Curve.Components[i].knotcurve.size();
-
-            // check proximity to tangent developable surface
-            int M = 16; // even integer for defining a window around the cusp point
-            int window[NP]; // window of integration
-            for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
-            int count = 0; // keep track of the number of cusp points we encounter
-            for (int s=0; s<NP; s++)
-            {
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                double ndotT =  (viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
-                // calculate dot product with the Frenet normal
-                double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
-                ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
-                // repeat for the next point along
-                double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
-                double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
-                double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
-                double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-                double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
-                ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
-                // only continue if ndotN changes sign and ndotT is negative
-                if ((ndotN*ndotN2<0) && (ndotT<0))
-                {
-                    // tag the point of the curve
-                    int sp = s;
-                    //if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
-                    // compute ndotT and ndotB
-                    viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
-                    viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
-                    viewz = Curve.Components[i].knotcurve[sp].zcoord - View.zcoord;
-                    dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
-                    // note the minus sign introduced here -- makes the quantity positive
-                    ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
-                    double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
-                    double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
-                    double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
-                    double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-
-                    double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
-                    double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
-                    // check if a threshold is exceeded
-                    double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                    if (threshold > 1)
-                    {
-
-                        // the lambda which, when put into a linear interpolatio of s n, would give the location of the zero in ndotN.
-                        double lambda = -(ndotN/(ndotN2 - ndotN));
-                        double s0 =sp +lambda;
-
-
-                        // an interpolation of the quanities needed in the integral:
-                        double k0 = Curve.Components[i].knotcurve[sp].curvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].curvature);
-                        double tau0 = Curve.Components[i].knotcurve[sp].torsion + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].torsion);
-                        double dk0 = Curve.Components[i].knotcurve[sp].dcurvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].dcurvature-Curve.Components[i].knotcurve[sp].dcurvature);
-                        double ndotB0 = ndotB + lambda*(ndotB2-ndotB);
-
-                        // value of the integral over the narrow Lorentzian peak
-
-                        double avgds = Curve.Components[i].length/NP;
-                        //Iplus += (-2.0*sqrt(2.0)*(ndotB0/ndotT0)/sqrt(1.0/ndotT0 - 1.0))*atan(k0*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT0 - 1.0)));
-                        double x0 = (sp - ((M/2) -1)-s0)*avgds;
-                        double x1 = (sp + ((M/2) +1)-s0)*avgds;
-                        double theta = asin(ndotB0);
-                        double Iplus0 = 2*(atan(k0*x0/theta) -atan(k0*x1/theta));
-                        double Iplus1 = (x1-x0)*tau0+(2+(theta*tau0)/k0) * (atan(k0*x0/theta) -atan(k0*x1/theta));
-                        Iplus +=Iplus1;
-                        // set an excluded window about sp
-                        for (int m=1; m<=M/2; m++) 
-                        {
-                            window[incp(sp,m,NP)] = 0;
-                            window[incp(sp,-(m-1),NP)] = 0;
-                        }
-                        count++;
-                        cout << "cusp found at s = " << s << '\n';
-                        cout << "theta is " << theta << '\n';
-
-                        // I want to check if the integral matches at the boundaries:
-                        viewx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].xcoord - View.xcoord;
-                        viewy = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].ycoord - View.ycoord;
-                        viewz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].zcoord - View.zcoord;
-                        dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                        // now do the Riemann integral -- I think I can rewrite this better
-                        double tx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].tx;
-                        double ty = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].ty;
-                        double tz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].tz;
-                        ndotT = viewx*tx + viewy*ty + viewz*tz;
-                        double kappaBx = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBx;
-                        double kappaBy = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBy;
-                        double kappaBz = Curve.Components[i].knotcurve[incp(sp,M/2+1,NP)].kappaBz;
-                        double Integrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                        (-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand;
-                        correctionapplied = ((-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand)/Integrand;
-                        cout << "taylor0 is " << ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                        cout << "taylor1 is " << ( -2*k0*theta + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                        cout << "taylor2 is " << ( -2*k0*theta - 2*dk0*x1*theta  + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                        cout << "numeric is " << Integrand  << '\n';
-                        cout << "relative error is " << correctionapplied/Integrand  << '\n';
-                        cout << "Iplus0 is " << Iplus0  << '\n';
-                        cout << "Iplus1 is " << Iplus1  << '\n';
-                        correctionflag =1;
-                    }
-                }
-            }
-
-            // now do the remaining integral as usual
-            for (int s=0; s<NP; s++) 
-            {
-                if (window[s]==1)
-                {
-                    // define the view vector -- n = (Curve - View)/|Curve - View|
-                    double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-                    double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-                    double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-                    double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-                    // now do the Riemann integral -- I think I can rewrite this better
-                    double tx = Curve.Components[i].knotcurve[s].tx;
-                    double ty = Curve.Components[i].knotcurve[s].ty;
-                    double tz = Curve.Components[i].knotcurve[s].tz;
-                    double ndotT = viewx*tx + viewy*ty + viewz*tz;
-                    double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-                    double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-                    double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-                    double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-
-                    double factor =1;
-                    // if(window[incp(s,1,NP)]==0 || window[incp(s,-1,NP)]==0){factor = 0.5;}
-                    // Simpson's rule quadrature
-                    //   double ds0 = Curve.Components[i].knotcurve[s].length;
-                    //   double dsp1 = Curve.Components[i].knotcurve[incp(s,1,NP)].length;
-                    //   double dsm1 = Curve.Components[i].knotcurve[incp(s,-1,NP)].length;
-                    //   double dsm2 = Curve.Components[i].knotcurve[incp(s,-2,NP)].length;
-                    //   double ds;
-                    //   if (s%2==0) ds = 0.5*(ds0+dsm1) + dsm1*dsm1/(6.0*ds0) + ds0*ds0/(6.0*dsm1);
-                    //   else ds = 0.5*(ds0+dsm1) + (dsm2-dsm1-ds0+dsp1)/6.0 - dsm2*dsm2/(6.0*dsm1) - dsp1*dsp1/(6.0*ds0); 
-                    // trapezium rule quadrature
-                    //      ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-                    // and here's the integrand
-                    uncorrectedpartIntegral += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    // cheap trick
-                    if ((window[incp(s,1,NP)]==0)||(window[incp(s,-1,NP)]==0))
-                    {
-                        //    Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    }
-                }
-            }
-            if(correctionflag){ cout << "uncorrected part is " << uncorrectedpartIntegral << '\n';};
-            Iplus += uncorrectedpartIntegral;
-            double componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Iplus;
-            totalomega += componentomega;
-        }
-        return totalomega;
-    }
-    void OutputSolidAngle(const Link& Curve)
-    {
-
-        double SolidAngle;
-        viewpoint Point;
-
-        // header stuff for the vtk file
-        string fn = "solid_angle.vtk";
-        ofstream Aout (fn.c_str());
-
-        griddata griddata;
-        griddata.Nx = Nx;
-        griddata.Ny = Ny;
-        griddata.Nz = Nz;
-        Aout << "# vtk DataFile Version 3.0\nKnot\nASCII\nDATASET STRUCTURED_POINTS\n";
-        Aout << "DIMENSIONS " << Nx << ' ' << Ny << ' ' << Nz << '\n';
-        Aout << "ORIGIN " << x(0,griddata) << ' ' << y(0,griddata) << ' ' << z(0,griddata) << '\n';
-        Aout << "SPACING " << h << ' ' << h << ' ' << h << '\n';
-        Aout << "POINT_DATA " << Nx*Ny*Nz << '\n';
-        Aout << "SCALARS Phi float\nLOOKUP_TABLE default\n";
-
-        // header stuff for the vtk file
-        fn = "solid_angle_regular.vtk";
-        ofstream Bout (fn.c_str());
-
-        Bout << "# vtk DataFile Version 3.0\nKnot\nASCII\nDATASET STRUCTURED_POINTS\n";
-        Bout << "DIMENSIONS " << Nx << ' ' << Ny << ' ' << Nz << '\n';
-        Bout << "ORIGIN " << x(0,griddata) << ' ' << y(0,griddata) << ' ' << z(0,griddata) << '\n';
-        Bout << "SPACING " << h << ' ' << h << ' ' << h << '\n';
-        Bout << "POINT_DATA " << Nx*Ny*Nz << '\n';
-        Bout << "SCALARS Phi float\nLOOKUP_TABLE default\n";
-
-        vector<double> additionaldata(Nx*Ny*Nz);
-
-        for (int k=0; k<Nz; k++) 
-        {
-            Point.zcoord = z(k,griddata);
-            for (int j=0; j<Ny; j++) 
-            {  
-                Point.ycoord = y(j,griddata) ;
-                for (int i=0; i<Nx; i++) 
-                {
-                    Point.xcoord = x(i,griddata);
-
-                    double ndotTmin,ndotTmax;
-                    CheckThreshold(Curve,Point,ndotTmin,ndotTmax);
-
-            //        if( i == Nx/2 && j == 87)
-            //        {
-            //            OutputIntegrands(Curve, Point,i,j,k);
-            //        }
-
-                    // is ndotT very close to 1? if so, better us 1/(1+ndotT)
-                    // if(fabs(1 - ndotTmax) < fabs(-1-ndotTmin)) 
-                    // {
-                    SolidAngle = SolidAngleCalc(Curve,Point);
-                    // }
-                    // else 
-                    {
-                        //      SolidAngle = SolidAngleCalc2(Curve,Point);
-                    }
-
-                    // put in the interval [0,4pi]
-                    while(SolidAngle>4*M_PI) SolidAngle -= 4*M_PI;
-                    while(SolidAngle<0) SolidAngle += 4*M_PI;
-
-                    Aout << SolidAngle << '\n';	      
-
-                    double correctionapplied = 0;
-                    SolidAngle = SolidAngleCalcR(Curve,Point,correctionapplied);
-
-                    // put in the interval [0,4pi]
-                    while(SolidAngle>4*M_PI) SolidAngle -= 4*M_PI;
-                    while(SolidAngle<0) SolidAngle += 4*M_PI;
-
-                    Bout << SolidAngle << '\n';	      
-                    additionaldata[Nz*Ny*i+Nz*j+k] = correctionapplied ;	      
-                }
-            }
-        }
-        Bout << "SCALARS correction float\nLOOKUP_TABLE default\n";
-        Aout << "SCALARS correction float\nLOOKUP_TABLE default\n";
-
-        for (int k=0; k<Nz; k++) 
-        {
-            for (int j=0; j<Ny; j++) 
-            {  
-                for (int i=0; i<Nx; i++) 
-                {
-                    Aout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
-                    Bout << additionaldata[Nz*Ny*i+Nz*j+k] <<  '\n';	      
-                }
-            }
-        }
-
-        Aout.close();
-        Bout.close();
-    }
-    void OutputTangentDevelopable(const Link& Curve)
-    {
-        // header stuff for the vtk file
-        string fn = "Tangent_Developable.txt";
-        ofstream Aout (fn.c_str());
-
-        griddata griddata;
-        griddata.Nx = Nx;
-        griddata.Ny = Ny;
-        griddata.Nz = Nz;
-
-        double spacing = 1;
-
-        // the forward branch
-        for(int i=0; i<Curve.NumComponents; i++)
-        {
-            int NP = Curve.Components[i].knotcurve.size();
-            for (int s=0; s<NP; s++) 
-            {
-
-                double xcoord = 0;
-                double ycoord = 0;
-                double zcoord = 0;
-                double lambda = 0;
-                while( xcoord < x(Nx,griddata) && xcoord > x(0,griddata) && ycoord < y(Ny,griddata) && ycoord > y(0,griddata) && zcoord < z(Nz,griddata) && zcoord > z(0,griddata) )
-                {
-                    xcoord = Curve.Components[i].knotcurve[s].xcoord + lambda*Curve.Components[i].knotcurve[s].tx;
-                    ycoord = Curve.Components[i].knotcurve[s].ycoord + lambda*Curve.Components[i].knotcurve[s].ty;
-                    zcoord = Curve.Components[i].knotcurve[s].zcoord + lambda*Curve.Components[i].knotcurve[s].tz;
-                    Aout << xcoord <<' '<<ycoord<<' '<<zcoord<< ' '<< 0 << '\n'; 	      
-                    lambda += spacing;
-                }
-            }
-        }
-        // the backward branch
-        for(int i=0; i<Curve.NumComponents; i++)
-        {
-            int NP = Curve.Components[i].knotcurve.size();
-            for (int s=0; s<NP; s++) 
-            {
-
-                double xcoord = 0;
-                double ycoord = 0;
-                double zcoord = 0;
-                double lambda = -spacing;
-                while( xcoord < x(Nx,griddata) && xcoord > x(0,griddata) && ycoord < y(Ny,griddata) && ycoord > y(0,griddata) && zcoord < z(Nz,griddata) && zcoord > z(0,griddata) )
-                {
-                    xcoord = Curve.Components[i].knotcurve[s].xcoord + lambda*Curve.Components[i].knotcurve[s].tx;
-                    ycoord = Curve.Components[i].knotcurve[s].ycoord + lambda*Curve.Components[i].knotcurve[s].ty;
-                    zcoord = Curve.Components[i].knotcurve[s].zcoord + lambda*Curve.Components[i].knotcurve[s].tz;
-                    Aout << xcoord <<' '<<ycoord<<' '<<zcoord<<' '<< 1 <<'\n'; 	      
-                    lambda -= spacing;
-                }
-            }
-        }
-        Aout.close();
-    }
-    // function to improve behaviour near tangent developable surface
-    void CheckThreshold(const Link& Curve, const viewpoint& Point, double& ndotTmin,double& ndotTmax)
-    {
-        // set these guys at impossible bounds
-        ndotTmin = 2.0;
-        ndotTmax = -2.0;
-        for(int i=0; i<Curve.NumComponents; i++)
-        {
-            int NP = Curve.Components[i].knotcurve.size();
-
-            for (int s=0; s<NP; s++) 
-            {
-                double curvex = Curve.Components[i].knotcurve[s].xcoord;
-                double curvey = Curve.Components[i].knotcurve[s].ycoord;
-                double curvez = Curve.Components[i].knotcurve[s].zcoord;
-                // define the view vector -- n = (Curve - View)/|Curve - View|
-                double viewx = curvex - Point.xcoord;
-                double viewy = curvey - Point.ycoord;
-                double viewz = curvez - Point.zcoord;
-                double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);		  
-                double tx = Curve.Components[i].knotcurve[s].tx;
-                double ty = Curve.Components[i].knotcurve[s].ty;
-                double tz = Curve.Components[i].knotcurve[s].tz;
-                double ndotT = (viewx*tx + viewy*ty + viewz*tz)/dist;
-                if (ndotT<ndotTmin) ndotTmin = ndotT;
-                if (ndotT>ndotTmax) ndotTmax = ndotT;
-            }
+            double curvex = Curve.Components[i].knotcurve[s].xcoord;
+            double curvey = Curve.Components[i].knotcurve[s].ycoord;
+            double curvez = Curve.Components[i].knotcurve[s].zcoord;
+            // define the view vector -- n = (Curve - View)/|Curve - View|
+            double viewx = curvex - Point.xcoord;
+            double viewy = curvey - Point.ycoord;
+            double viewz = curvez - Point.zcoord;
+            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);		  
+            double tx = Curve.Components[i].knotcurve[s].tx;
+            double ty = Curve.Components[i].knotcurve[s].ty;
+            double tz = Curve.Components[i].knotcurve[s].tz;
+            double ndotT = (viewx*tx + viewy*ty + viewz*tz)/dist;
+            if (ndotT<ndotTmin) ndotTmin = ndotT;
+            if (ndotT>ndotTmax) ndotTmax = ndotT;
         }
     }
+}
 
-    inline int incp(int i, int p, int N)    //increment i with p for periodic boundary
-    {
-        if(i+p<0) return (N+i+p);
-        else return ((i+p)%N);
-    }
-    inline double x(int i,const griddata& griddata)
-    {
-        return (i+0.5-griddata.Nx/2.0)*h;
-    }
-    inline double y(int i,const griddata& griddata)
-    {
-        return (i+0.5-griddata.Ny/2.0)*h;
-    }
-    inline double z(int i,const griddata& griddata)
-    {
-        return (i+0.5-griddata.Nz/2.0)*h;
-    }
+inline int incp(int i, int p, int N)    //increment i with p for periodic boundary
+{
+    if(i+p<0) return (N+i+p);
+    else return ((i+p)%N);
+}
+inline double x(int i,const griddata& griddata)
+{
+    return (i+0.5-griddata.Nx/2.0)*h;
+}
+inline double y(int i,const griddata& griddata)
+{
+    return (i+0.5-griddata.Ny/2.0)*h;
+}
+inline double z(int i,const griddata& griddata)
+{
+    return (i+0.5-griddata.Nz/2.0)*h;
+}
