@@ -21,18 +21,10 @@ struct knotpoint
     double kappaNx;  //curvature vector x component
     double kappaNy;  //curvature vector x component
     double kappaNz;  //curvature vector x component
-    double Nx;  //curvature vector x component
-    double Ny;  //curvature vector x component
-    double Nz;  //curvature vector x component
     double kappaBx;  //integrand we need, x component
     double kappaBy;  //integrand we need, y component
     double kappaBz;  //integrand we need, z component
-    double Bx;  //integrand we need, x component
-    double By;  //integrand we need, y component
-    double Bz;  //integrand we need, z component
     double curvature;
-    double dcurvature;
-    double torsion;
 };
 
 struct knotcurve
@@ -71,31 +63,24 @@ struct griddata
 
 void InitialiseFromFile(struct Link& Curve);
 void ScaleFunction(double *scale, double maxxin, double minxin, double maxyin, double minyin, double maxzin, double minzin);
-void InitialiseCurve(struct Link& Curve);
-void RefineCurve(struct Link& Curve);
 
 /**********************Functions for curve geometry************************/
 
 void ComputeLengths(struct Link& Curve);
 void ComputeTangent(struct Link& Curve);
 void ComputeKappaB(struct Link& Curve);
-void Writhe(struct Link& Curve);
-void Twist(struct Link& Curve, const struct viewpoint& View);
+void ComputeWrithe(struct Link& Curve);
 
 /***********************Functions for outputting the solid angle*************************/
 
-double SolidAngleCalc(const struct Link& Curve, const struct viewpoint& View);
-double SolidAngleCalc2(const struct Link& Curve, const struct viewpoint& View);
-double SolidAngleCalcR(const Link& Curve, const viewpoint& View,double& correctionapplied);
+double SolidAngleCalcR(const Link& Curve, const viewpoint& View);
 void OutputSolidAngle(const struct Link& Curve);
-void OutputTangentDevelopable(const Link& Curve);
-void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int  Pointj, int  Pointk);
 
 /*************************General maths and integer functions*****************************/
 
-void CheckThreshold(const struct Link& Curve, const struct viewpoint& Point,double& ndotTmin,double& ndotTmax);
 // little inline guys
 inline int incp(int i, int p, int N);    //increment i with p for periodic boundary
 inline double x(int i,const griddata& griddata);
 inline double y(int i,const griddata& griddata);
 inline double z(int i,const griddata& griddata);
+inline  int pt( int i,  int j,  int k,const griddata& griddata);      //convert i,j,k to single index
