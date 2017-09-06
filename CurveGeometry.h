@@ -21,9 +21,18 @@ struct knotpoint
     double kappaNx;  //curvature vector x component
     double kappaNy;  //curvature vector x component
     double kappaNz;  //curvature vector x component
+    double Nx;  //curvature vector x component
+    double Ny;  //curvature vector x component
+    double Nz;  //curvature vector x component
     double kappaBx;  //integrand we need, x component
     double kappaBy;  //integrand we need, y component
     double kappaBz;  //integrand we need, z component
+    double Bx;  //integrand we need, x component
+    double By;  //integrand we need, y component
+    double Bz;  //integrand we need, z component
+    double curvature;
+    double dcurvature;
+    double torsion;
 };
 
 struct knotcurve
@@ -77,7 +86,10 @@ void Twist(struct Link& Curve, const struct viewpoint& View);
 
 double SolidAngleCalc(const struct Link& Curve, const struct viewpoint& View);
 double SolidAngleCalc2(const struct Link& Curve, const struct viewpoint& View);
+double SolidAngleCalcR(const Link& Curve, const viewpoint& View,double& correctionapplied);
 void OutputSolidAngle(const struct Link& Curve);
+void OutputTangentDevelopable(const Link& Curve);
+void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int  Pointj, int  Pointk);
 
 /*************************General maths and integer functions*****************************/
 
