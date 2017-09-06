@@ -369,6 +369,7 @@ void Twist(Link& Curve, const viewpoint& View)
     }
 }
 
+/*
 // a function which will output the entire integrand at a given point
 void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int  Pointj, int  Pointk)
 {
@@ -419,6 +420,7 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
         int M = 32; // even integer for defining a window around the cusp point
         int window[NP]; // window of integration
         double Integrand[NP]; // window of integration
+        double data[NP]; // window of integration
         for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
         int count = 0; // keep track of the number of cusp points we encounter
         for (int s=0; s<NP; s++)
@@ -441,6 +443,8 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
             double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
             ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
             // only continue if ndotN changes sign and ndotT is negative
+            data[s]=ndotN;
+
             if ((ndotN*ndotN2<0) && (ndotT<0))
             {
                 // tag the point of the curve
@@ -455,7 +459,7 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                 ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
                 // check if a threshold is exceeded
                 double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                if (threshold > 1)
+                if (threshold > 0.7)
                 {
                     // note the minus sign introduced here -- makes the quantity positive
                     double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
@@ -519,7 +523,7 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
                     //  tempIntegrand += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
                     // Iplus += 0.5*(M-1)*ds*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
                 }
-                Integrand[s]=tempIntegrand*ds;
+               // Integrand[s]=tempIntegrand*ds;
             }
         }
 
@@ -528,10 +532,12 @@ void OutputIntegrands(const Link& Curve, const viewpoint& View, int Pointi, int 
         string name = oss.str();
         ofstream A3out (name.c_str());
 
-        for (int s=0; s<NP; s++){A3out << Integrand[s] << '\n';};
+        for (int s=0; s<NP; s++){A3out << data[s] << '\n';};
         A3out.close();
     }
 }
+
+*/
 
 double SolidAngleCalc(const Link& Curve, const viewpoint& View)
 {
@@ -635,10 +641,13 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
         int window[NP]; // window of integration
         double correctedintegrand[NP]; // window of integration
         double uncorrectedintegrand[NP]; // window of integration
+        double data[NP]; // window of integration
+        double somemoredata[NP]; // window of integration
 
         for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
 
         int count = 0; // keep track of the number of cusp points we encounter
+        vector<int> slist;
         for (int s=0; s<NP; s++)
         {
             // define the view vector -- n = (Curve - View)/|Curve - View|
@@ -655,10 +664,14 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
             double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
             double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
             double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-            double ndotN2 = viewx*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
+            double ndotN2 = viewx2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
             ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
+            //data[s]= (ndotN >0 && ndotN2 <0) || (ndotN<0 && ndotN2>0);
+            data[s]= ndotN ;
+            somemoredata[s]=ndotN2;
             // only continue if ndotN changes sign and ndotT is negative
-            if ((ndotN*ndotN2<0) && (ndotT<0))
+            //if ((ndotN*ndotN2<0) && (ndotT<0))
+            if (( (ndotN >0 && ndotN2 <0) || (ndotN<0 && ndotN2>0) ) && ndotT<0)
             {
                 // tag the point of the curve
                 int sp = s;
@@ -679,8 +692,19 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
                 double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
                 // check if a threshold is exceeded
                 double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                if (threshold > 0.1)
+                if (threshold > 0.5)
                 {
+                    slist.push_back(sp);
+                    count++;
+
+                    if(count>1){ 
+
+                        cout << count << '\n';
+                        cout << slist[0] << '\t' <<  slist[1] <<  '\n';
+                        cout <<'\t' <<View.xcoord <<'\t' << View.ycoord <<'\t'  << View.zcoord<< '\n';
+                    
+                    
+                    }
 
                     correctionflag =1;
 
@@ -703,9 +727,12 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
                     //   double x1 = (sp + M/2 +1 -s0)*avgds;
                     double x1 = (sp + M/2  -s0)*avgds;
                     double theta = asin(ndotB0);
+                    double sintheta = (ndotB0);
+                    double costheta = sqrt(1-ndotB0*ndotB0);
                     double Iplus0 = 2*(atan(k0*x0/theta) -atan(k0*x1/theta));
                     double Iplus1 = (x1-x0)*tau0+(2+(theta*tau0)/k0) * (atan(k0*x0/theta) -atan(k0*x1/theta));
                     Iplus +=Iplus0;
+                    correctionapplied =  Iplus0;
                     // set an excluded window about sp
                     //   for (int m=1; m<=M/2; m++) 
                     //   {
@@ -721,18 +748,21 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
                     {
                         double y1 = (sp + q -s0)*avgds;
                         window[incp(sp,q,NP)] = 0;
-                        correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y1*y1) ) ;
+                        //correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y1*y1) ) ;
+                 //       correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta - 2*dk0*y1*theta  + ( k0*k0*tau0*y1*y1 ) )/ ( (theta*theta)+ (k0*k0*y1*y1) );
+                        correctedintegrand[incp(sp,q,NP)] = (-k0*sintheta-dk0*sintheta*y1-0.5*y1*y1*k0*k0*tau0*costheta)/ (1-costheta+y1*y1*(0.5*k0*k0*costheta-0.5*k0*tau0*sintheta ));
                     }
                     // do the ones below 
                     for (int q=-1; q>=(-M/2)+1; q--) 
                     {
                         double y0 = (sp + q -s0)*avgds;
                         window[incp(sp,q,NP)] = 0;
-                        correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y0*y0) ) ;
+                       // correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*y0*y0) ) ;
+                  //      correctedintegrand[incp(sp,q,NP)] = ( -2*k0*theta - 2*dk0*y0*theta  + ( k0*k0*tau0*y0*y0 ) )/ ( (theta*theta)+ (k0*k0*y0*y0) ) ;
+                        correctedintegrand[incp(sp,q,NP)] = (-k0*sintheta-dk0*sintheta*y0-0.5*y0*y0*k0*k0*tau0*costheta)/ (1-costheta+y0*y0*(0.5*k0*k0*costheta-0.5*k0*tau0*sintheta ));
                     }
-                    count++;
-                    cout << "cusp found at s = " << s << '\n';
-                    cout << "theta is " << theta << '\n';
+                   // cout << "cusp found at s = " << s << '\n';
+                   // cout << "theta is " << theta << '\n';
 
                     // I want to check if the integral matches at the boundaries:
                     viewx = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].xcoord - View.xcoord;
@@ -748,15 +778,13 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
                     double kappaBy = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].kappaBy;
                     double kappaBz = Curve.Components[i].knotcurve[incp(sp,M/2,NP)].kappaBz;
                     double Integrand = (viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-                    (-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand;
-                    correctionapplied = ((-2*k0*theta/((theta*theta)+ (k0*k0*x1*x1)))-Integrand)/Integrand;
-                    cout << "taylor0 is " << ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                    cout << "taylor1 is " << ( -2*k0*theta + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                    cout << "taylor2 is " << ( -2*k0*theta - 2*dk0*x1*theta  + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
-                    cout << "numeric is " << Integrand  << '\n';
-                    cout << "relative error is " << correctionapplied/Integrand  << '\n';
-                    cout << "Iplus0 is " << Iplus0  << '\n';
-                    cout << "Iplus1 is " << Iplus1  << '\n';
+                   // cout << "taylor0 is " << ( -2*k0*theta ) / ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                   // cout << "taylor1 is " << ( -2*k0*theta + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                   // cout << "taylor2 is " << ( -2*k0*theta - 2*dk0*x1*theta  + ( k0*k0*tau0*x1*x1 ) )/ ( (theta*theta)+ (k0*k0*x1*x1) ) << '\n';
+                    //cout << "numeric is " << Integrand  << '\n';
+                   // cout << "relative error is " << correctionapplied/Integrand  << '\n';
+                   // cout << "Iplus0 is " << Iplus0  << '\n';
+                   // cout << "Iplus1 is " << Iplus1  << '\n';
                 }
             }
         }
@@ -813,13 +841,15 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View, double& correct
             oss << "RegularisedPlusIntegrand" << View.xcoord << "_"  << View.ycoord <<"_" << View.zcoord << ".txt";
             string name = oss.str();
             ofstream Aout (name.c_str());
-            for (int s=0; s<NP; s++){Aout << correctedintegrand[s] << '\n';};
+            //for (int s=0; s<NP; s++){Aout << correctedintegrand[s] << '\n';};
+            for (int s=0; s<NP; s++){Aout << data[s] << '\n';};
             Aout.close();
             std::ostringstream oss2;
             oss2 << "PlusIntegrand" << View.xcoord << "_"  << View.ycoord <<"_" << View.zcoord << ".txt";
             name = oss2.str();
             ofstream A2out (name.c_str());
-            for (int s=0; s<NP; s++){A2out << uncorrectedintegrand[s] << '\n';};
+            //for (int s=0; s<NP; s++){A2out << uncorrectedintegrand[s] << '\n';};
+            for (int s=0; s<NP; s++){A2out << somemoredata[s] << '\n';};
             A2out.close();
         };
 
