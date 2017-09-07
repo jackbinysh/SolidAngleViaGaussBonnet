@@ -282,7 +282,7 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
                 double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
                 // check if a threshold is exceeded
                 double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                if (threshold > 0.5)
+                if (threshold > 1)
                 {
                     // the lambda which, when put into a linear interpolatio of s n, would give the location of the zero in ndotN.
                     double lambda = -(ndotN/(ndotN2 - ndotN));
@@ -294,7 +294,9 @@ double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
 
                     // value of the integral over the narrow Lorentzian peak
 
-                    double avgds = Curve.Components[i].length/NP;
+                    // ok - this is a hack . if you check, you will find that it matters that the arclengths are not constant, and are not the same as the total average, when it comes to evaluting the below integral. rather than properly implementing getting x0 and x1 for varying arc length, im just setting the "average" to the value at sp, assuming its constant over the lorentzian peak - but note that the value at sp may be quite different from the overall average.
+                    double avgds = Curve.Components[i].knotcurve[sp].length;
+
                     double x0 = (sp - M/2 +1-s0)*avgds;
                     double x1 = (sp + M/2  -s0)*avgds;
                     double theta = asin(ndotB0);
