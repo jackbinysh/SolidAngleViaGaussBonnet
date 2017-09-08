@@ -204,7 +204,7 @@ void ComputeWrithe(Link& Curve)
             double t1x = Curve.Components[i].knotcurve[s].tx;
             double t1y = Curve.Components[i].knotcurve[s].ty;
             double t1z = Curve.Components[i].knotcurve[s].tz;
-            double ds = Curve.Components[i].knotcurve[s].length;
+	    double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
 
             for (int t=s+1; t<NP; t++) // run over all points ahead of s
             {
@@ -214,7 +214,7 @@ void ComputeWrithe(Link& Curve)
                 double t2x = Curve.Components[i].knotcurve[t].tx;
                 double t2y = Curve.Components[i].knotcurve[t].ty;
                 double t2z = Curve.Components[i].knotcurve[t].tz;
-                double dt = Curve.Components[i].knotcurve[t].length;
+		double dt = 0.5*(Curve.Components[i].knotcurve[t].length+Curve.Components[i].knotcurve[incp(t,-1,NP)].length);
 
                 double dist = sqrt((a1x-a2x)*(a1x-a2x)+(a1y-a2y)*(a1y-a2y)+(a1z-a2z)*(a1z-a2z));
                 Wr += ds*dt*((a1x-a2x)*(t1y*t2z-t1z*t2y)+(a1y-a2y)*(t1z*t2x-t1x*t2z)+(a1z-a2z)*(t1x*t2y-t1y*t2x))/(dist*dist*dist);
@@ -228,133 +228,116 @@ void ComputeWrithe(Link& Curve)
 // the regularised one
 double SolidAngleCalcR(const Link& Curve, const viewpoint& View)
 {
-
-    double totalomega =0;
-    for(int i=0; i<Curve.NumComponents; i++)
+  double totalomega = 0;
+  for(int i=0; i<Curve.NumComponents; i++)
     {
-        double Integral= 0.0;
-        double correctedpartIntegral = 0.0;
-        double uncorrectedpartIntegral = 0.0;
-
-        int M = 8; // even integer for defining a window around the cusp point
-        int NP = Curve.Components[i].knotcurve.size();
-        int window[NP]; // window of integration
-
-        for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
-
-        for (int s=0; s<NP; s++)
+      double Integral = 0.0;
+      double correctedpartIntegral = 0.0;
+      double uncorrectedpartIntegral = 0.0;
+      
+      int M = 6; // even integer for defining a window around the cusp point
+      int NP = Curve.Components[i].knotcurve.size();
+      int window[NP]; // window of integration
+      
+      for (int s=0; s<NP; s++) {window[s]=1;} // there must be something smarter than this!!
+      
+      for (int s=0; s<NP; s++)
         {
-            // define the view vector -- n = (Curve - View)/|Curve - View|
-            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-            double ndotT =  (viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
-            // calculate dot product with the Frenet normal
-            double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
-            ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
-            // repeat for the next point along
-            double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
-            double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
-            double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
-            double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-            double ndotN2 = viewx2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
-            ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
-            // only continue if ndotN changes sign and ndotT is negative
-            if ((ndotN*ndotN2<0) && (ndotT<0))
+	  // define the view vector -- n = (Curve - View)/|Curve - View|
+	  double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+	  double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+	  double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+	  double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+	  double ndotT =  (viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
+	  // calculate dot product with the Frenet normal
+	  double ndotN = viewx*Curve.Components[i].knotcurve[s].kappaNx + viewy*Curve.Components[i].knotcurve[s].kappaNy + viewz*Curve.Components[i].knotcurve[s].kappaNz;
+	  ndotN /= (dist*Curve.Components[i].knotcurve[s].curvature); // shouldn't really be necessary
+	  // repeat for the next point along
+	  double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
+	  double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
+	  double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
+	  double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
+	  double ndotN2 = viewx2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNx + viewy2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNy + viewz2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaNz;
+	  ndotN2 /= (dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature); // shouldn't really be necessary
+	  // only continue if ndotN changes sign and ndotT is negative
+	  if ((ndotN*ndotN2<0) && (ndotT<0))
             {
-                // tag the point of the curve
-                int sp = s;
-                //if ((-ndotN2/ndotN)<1) sp = incp(s,1,NP);
-                // compute ndotT and ndotB
-                viewx = Curve.Components[i].knotcurve[sp].xcoord - View.xcoord;
-                viewy = Curve.Components[i].knotcurve[sp].ycoord - View.ycoord;
-                viewz = Curve.Components[i].knotcurve[sp].zcoord - View.zcoord;
-                dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);
-                // note the minus sign introduced here -- makes the quantity positive
-                ndotT = -(viewx*Curve.Components[i].knotcurve[sp].tx + viewy*Curve.Components[i].knotcurve[sp].ty + viewz*Curve.Components[i].knotcurve[sp].tz)/dist;
-                double viewx2 = Curve.Components[i].knotcurve[incp(s,1,NP)].xcoord - View.xcoord;
-                double viewy2 = Curve.Components[i].knotcurve[incp(s,1,NP)].ycoord - View.ycoord;
-                double viewz2 = Curve.Components[i].knotcurve[incp(s,1,NP)].zcoord - View.zcoord;
-                double dist2 = sqrt(viewx2*viewx2 + viewy2*viewy2 + viewz2*viewz2);      
-
-                double ndotB = -(viewx*Curve.Components[i].knotcurve[sp].kappaBx + viewy*Curve.Components[i].knotcurve[sp].kappaBy + viewz*Curve.Components[i].knotcurve[sp].kappaBz)/(dist*Curve.Components[i].knotcurve[sp].curvature);
-                double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(sp,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature);
-                // check if a threshold is exceeded
-                double threshold = Curve.Components[i].knotcurve[sp].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
-                if (threshold > 1)
+	      // compute ndotT -- note the minus sign introduced here; makes the quantity positive
+	      ndotT = -(viewx*Curve.Components[i].knotcurve[s].tx + viewy*Curve.Components[i].knotcurve[s].ty + viewz*Curve.Components[i].knotcurve[s].tz)/dist;
+	      double ndotT2 = -(viewx2*Curve.Components[i].knotcurve[incp(s,1,NP)].tx + viewy2*Curve.Components[i].knotcurve[incp(s,1,NP)].ty + viewz2*Curve.Components[i].knotcurve[incp(s,1,NP)].tz)/dist2;
+	      // check if a threshold is exceeded -- perhaps not optimal, but sufficient?
+	      double threshold = Curve.Components[i].knotcurve[s].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT - 1.0));
+	      double threshold2 = Curve.Components[i].knotcurve[incp(s,1,NP)].curvature*M*(Curve.Components[i].length/NP)/(2.0*sqrt(2.0)*sqrt(1.0/ndotT2 - 1.0));
+	      if (threshold2 > threshold) threshold = threshold2;
+	      if (threshold > 1)
                 {
-                    // the lambda which, when put into a linear interpolatio of s n, would give the location of the zero in ndotN.
-                    double lambda = -(ndotN/(ndotN2 - ndotN));
-                    double s0 =sp +lambda;
+		  // compute ndotB -- note the minus sign introduced here; makes the quantity positive
+		  double ndotB = -(viewx*Curve.Components[i].knotcurve[s].kappaBx + viewy*Curve.Components[i].knotcurve[s].kappaBy + viewz*Curve.Components[i].knotcurve[s].kappaBz)/(dist*Curve.Components[i].knotcurve[s].curvature);
+		  double ndotB2 = -(viewx2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaBx + viewy2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaBy + viewz2*Curve.Components[i].knotcurve[incp(s,1,NP)].kappaBz)/(dist2*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature);
+		  // convex interpolation of values needed for computing the integral
+		  double lambda = ndotN/(ndotN-ndotN2); // fractional distance of zero between s and s+1
+		  double theta = asin((1.0-lambda)*ndotB + lambda*ndotB2);
+		  double k0 = (1.0-lambda)*Curve.Components[i].knotcurve[s].curvature + lambda*Curve.Components[i].knotcurve[incp(s,1,NP)].curvature;
+		  // set an exclusion window about s+lambda and compute its width 
+		  double Deltasp = (1.0-lambda)*Curve.Components[i].knotcurve[s].length;
+		  double Deltasm = lambda*Curve.Components[i].knotcurve[s].length;
+		  // do the ones above
+		  window[incp(s,1,NP)] = 0;
+		  for (int q=1; q<=M/2; q++)
+		    {
+		      window[incp(s,q+1,NP)] = 0;
+		      Deltasp += Curve.Components[i].knotcurve[incp(s,q,NP)].length;
+		    }
+		  // do the ones below
+		  window[s] = 0;
+		  for (int q=1; q<=M/2; q++)
+		    {
+		      window[incp(s,-q,NP)] = 0;
+		      Deltasm += Curve.Components[i].knotcurve[incp(s,-q,NP)].length;
+		    }
+		  // value of the integral over the narrow Lorentzian peak -- simplest expression for it !!
+		  double Iplus0 = -2.0*(atan(k0*Deltasp/theta) + atan(k0*Deltasm/theta));
+		  correctedpartIntegral += Iplus0;
+		}
+	    }
+	}
 
-                    // an interpolation of the quanities needed in the integral:
-                    double k0 = Curve.Components[i].knotcurve[sp].curvature + lambda*(Curve.Components[i].knotcurve[incp(sp,1,NP)].curvature-Curve.Components[i].knotcurve[sp].curvature);
-                    double ndotB0 = ndotB + lambda*(ndotB2-ndotB);
-
-                    // value of the integral over the narrow Lorentzian peak
-
-                    // ok - this is a hack . if you check, you will find that it matters that the arclengths are not constant, and are not the same as the total average, when it comes to evaluting the below integral. rather than properly implementing getting x0 and x1 for varying arc length, im just setting the "average" to the value at sp, assuming its constant over the lorentzian peak - but note that the value at sp may be quite different from the overall average.
-                    double avgds = Curve.Components[i].knotcurve[sp].length;
-
-                    double x0 = (sp - M/2 +1-s0)*avgds;
-                    double x1 = (sp + M/2  -s0)*avgds;
-                    double theta = asin(ndotB0);
-                    double Iplus0 = 2*(atan(k0*x0/theta) -atan(k0*x1/theta));
-                    correctedpartIntegral +=Iplus0;
-                    // set an excluded window about sp
-                    // do the ones above
-                    for (int q=0; q<=M/2; q++) 
-                    {
-                        double y1 = (sp + q -s0)*avgds;
-                        window[incp(sp,q,NP)] = 0;
-                    }
-                    // do the ones below 
-                    for (int q=-1; q>=(-M/2)+1; q--) 
-                    {
-                        double y0 = (sp + q -s0)*avgds;
-                        window[incp(sp,q,NP)] = 0;
-                    }
+      // now do the remaining integral as usual
+      for (int s=0; s<NP; s++) 
+        {
+	  // define the view vector -- n = (Curve - View)/|Curve - View|
+	  double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
+	  double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
+	  double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
+	  double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
+	  // now do the Riemann integral 
+	  double tx = Curve.Components[i].knotcurve[s].tx;
+	  double ty = Curve.Components[i].knotcurve[s].ty;
+	  double tz = Curve.Components[i].knotcurve[s].tz;
+	  double ndotT = viewx*tx + viewy*ty + viewz*tz;
+	  double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
+	  double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
+	  double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
+	  double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
+	  
+	  double factor = 1;
+	  if (window[s]==0)
+            {
+	      factor = 0;
+	      // if we are are the edge of the excluded region
+	      if(window[incp(s,1,NP)]==1||window[incp(s,-1,NP)]==1)
+                {
+		  factor = 0.5;
                 }
             }
+	  uncorrectedpartIntegral += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
         }
-
-        // now do the remaining integral as usual
-        for (int s=0; s<NP; s++) 
-        {
-            // define the view vector -- n = (Curve - View)/|Curve - View|
-            double viewx = Curve.Components[i].knotcurve[s].xcoord - View.xcoord;
-            double viewy = Curve.Components[i].knotcurve[s].ycoord - View.ycoord;
-            double viewz = Curve.Components[i].knotcurve[s].zcoord - View.zcoord;
-            double dist = sqrt(viewx*viewx + viewy*viewy + viewz*viewz);      
-            // now do the Riemann integral -- I think I can rewrite this better
-            double tx = Curve.Components[i].knotcurve[s].tx;
-            double ty = Curve.Components[i].knotcurve[s].ty;
-            double tz = Curve.Components[i].knotcurve[s].tz;
-            double ndotT = viewx*tx + viewy*ty + viewz*tz;
-            double kappaBx = Curve.Components[i].knotcurve[s].kappaBx;
-            double kappaBy = Curve.Components[i].knotcurve[s].kappaBy;
-            double kappaBz = Curve.Components[i].knotcurve[s].kappaBz;
-            double ds = 0.5*(Curve.Components[i].knotcurve[s].length+Curve.Components[i].knotcurve[incp(s,-1,NP)].length);
-
-            double factor =1;
-            if (window[s]==0)
-            {
-                factor = 0;
-                // if we are are the edge of the excluded region
-                if(window[incp(s,1,NP)]==1||window[incp(s,-1,NP)]==1)
-                {
-                    factor = 0.5;
-                }
-            }
-            uncorrectedpartIntegral += ds*factor*(viewx*kappaBx + viewy*kappaBy + viewz*kappaBz)/(dist + ndotT);
-        }
-
-        Integral = correctedpartIntegral+uncorrectedpartIntegral;
-        double componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Integral;
-        totalomega += componentomega;
+      // add it all up
+      Integral = correctedpartIntegral+uncorrectedpartIntegral;
+      double componentomega = 2.0*M_PI*(1.0 + Curve.Components[i].writhe)-Integral;
+      totalomega += componentomega;
     }
-    return totalomega;
+  return totalomega;
 }
 
 void OutputSolidAngle(const Link& Curve)
